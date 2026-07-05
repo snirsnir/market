@@ -1837,14 +1837,13 @@ async function onScanSuccess(decodedText) {
         item.aiSummary = summary;
         updateScanPopup(summary);
       } else {
-        // AI failed — show aiFact directly as fallback
-        updateScanPopup(item.aiFact || '');
+        updateScanPopup('');
       }
       saveItemsToFirebase();
       updateCart();
     }).catch(function() {
       item.aiSummaryLoading = false;
-      updateScanPopup(item.aiFact || '');
+      updateScanPopup('');
       updateCart();
     });
   } catch (err) {
