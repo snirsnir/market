@@ -546,25 +546,24 @@ function generatePrintPage(selectedProducts) {
   html += '<title>מדבקות QR</title>';
   html += '<style>';
   html += '* { box-sizing: border-box; margin:0; padding:0; }';
-  html += 'body { font-family: Arial, sans-serif; direction: rtl; }';
-  html += '.page-controls { padding: 1rem; background: #f5f5f5; border-bottom: 1px solid #ddd; display: flex; gap: .75rem; align-items: center; }';
-  html += '.page-controls button { padding: .5rem 1.2rem; background: #29ABE2; color:#fff; border:none; border-radius:6px; font-size:.95rem; cursor:pointer; font-weight:600; }';
-  html += '.sticker-grid { padding: 1cm; display: grid; grid-template-columns: repeat(4, 5cm); gap: 3mm; }';
-  html += '.sticker { width:5cm; height:3cm; border:1.5px dashed #aaa; border-radius:3px; display:flex; flex-direction:column; overflow:hidden; padding:2px; }';
-  html += '.sticker-body { flex:1; display:flex; align-items:center; gap:4px; padding:2px; }';
-  html += '.sticker-qr { flex-shrink:0; }';
-  html += '.sticker-qr canvas, .sticker-qr img { width:55px!important; height:55px!important; }';
-  html += '.sticker-info { flex:1; text-align:right; overflow:hidden; }';
-  html += '.sticker-emoji { font-size:1.4rem; line-height:1; }';
-  html += '.sticker-name { font-size:7pt; font-weight:700; color:#333; word-break:break-word; }';
-  html += '.sticker-hint { font-size:5.5pt; color:#888; margin-top:2px; }';
-  html += '.sticker-footer { text-align:center; font-size:5pt; color:#aaa; border-top:1px solid #eee; padding:1px 0; }';
-  html += '@media print { .page-controls { display:none!important; } .sticker-grid { padding:.5cm; } }';
+  html += 'body { font-family: Arial, sans-serif; direction: rtl; background:#fff; }';
+  html += '.page-controls { padding: .75rem 1rem; background: #f5f5f5; border-bottom: 1px solid #ddd; display: flex; gap: .75rem; align-items: center; }';
+  html += '.page-controls button { padding: .45rem 1.1rem; background: #29ABE2; color:#fff; border:none; border-radius:6px; font-size:.9rem; cursor:pointer; font-weight:600; }';
+  html += '.sticker-grid { padding: 8mm; display: grid; grid-template-columns: repeat(3, 164px); gap: 6mm; justify-content: start; }';
+  html += '.sticker { width:164px; border:1.5px dashed #bbb; border-radius:6px; display:flex; flex-direction:column; align-items:center; overflow:hidden; background:#fff; }';
+  html += '.sticker-top { width:100%; display:flex; align-items:center; gap:4px; padding:4px 6px; border-bottom:1px solid #eee; background:#fafafa; }';
+  html += '.sticker-top img { width:22px; height:22px; object-fit:contain; flex-shrink:0; }';
+  html += '.sticker-top .s-emoji { font-size:1.1rem; flex-shrink:0; }';
+  html += '.sticker-top .s-name { font-size:7.5pt; font-weight:700; color:#222; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }';
+  html += '.sticker-qr { padding:5px; display:flex; justify-content:center; align-items:center; }';
+  html += '.sticker-qr canvas { display:block; }';
+  html += '.sticker-footer { width:100%; text-align:center; font-size:6pt; color:#999; border-top:1px solid #eee; padding:3px 0; letter-spacing:.3px; }';
+  html += '@media print { .page-controls{display:none!important;} body{margin:0;} .sticker-grid{padding:5mm;} }';
   html += '</style>';
   html += '</head>';
   html += '<body>';
   html += '<div class="page-controls">';
-  html += '<button onclick="window.print()">הדפס</button>';
+  html += '<button onclick="window.print()">🖨️ הדפס</button>';
   html += '<button onclick="window.close()">סגור</button>';
   html += '<span style="font-size:.85rem;color:#666;">' + selectedProducts.length + ' מדבקות</span>';
   html += '</div>';
@@ -573,18 +572,15 @@ function generatePrintPage(selectedProducts) {
   for (var i = 0; i < selectedProducts.length; i++) {
     var p = selectedProducts[i];
     html += '<div class="sticker">';
-    html += '<div class="sticker-body">';
-    html += '<div class="sticker-qr" id="qr' + i + '"></div>';
-    html += '<div class="sticker-info">';
+    html += '<div class="sticker-top">';
     if (p.image) {
-      html += '<img src="' + p.image + '" style="width:32px;height:32px;object-fit:contain;display:block;margin-bottom:2px;" />';
+      html += '<img src="' + p.image + '" />';
     } else {
-      html += '<div class="sticker-emoji">' + p.emoji + '</div>';
+      html += '<span class="s-emoji">' + (p.emoji || '📦') + '</span>';
     }
-    html += '<div class="sticker-name">' + p.name + '</div>';
-    html += '<div class="sticker-hint">סרוק כאן</div>';
+    html += '<span class="s-name">' + p.name + '</span>';
     html += '</div>';
-    html += '</div>';
+    html += '<div class="sticker-qr" id="qr' + i + '"></div>';
     html += '<div class="sticker-footer">טכנודע | סופר-מדע</div>';
     html += '</div>';
   }
@@ -596,8 +592,8 @@ function generatePrintPage(selectedProducts) {
   html += 'data.forEach(function(barcode, i) {';
   html += '  var el = document.getElementById("qr" + i);';
   html += '  if (!el) return;';
-  html += '  try { new QRCode(el, { text: barcode, width: 55, height: 55, colorDark: "#333", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M }); }';
-  html += '  catch(e) { el.textContent = barcode; el.style.fontSize = "5pt"; }';
+  html += '  try { new QRCode(el, { text: barcode, width: 154, height: 154, colorDark: "#000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M }); }';
+  html += '  catch(e) { el.textContent = barcode; el.style.fontSize = "7pt"; }';
   html += '});';
   html += '<' + '/script>';
   html += '</body></html>';
