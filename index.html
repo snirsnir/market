@@ -1716,7 +1716,7 @@ function showScanPopup(item) {
   aiBox.querySelector('.scan-popup-ai-icon').textContent = '🔬';
 
   // Apply theme color to header
-  const t = THEMES.find(x => x.id === currentTheme) || THEMES[0];
+  const t = selectedTheme || THEMES[0];
   document.querySelector('.scan-popup-header').style.background =
     'linear-gradient(135deg,' + t.c1 + '18 0%,' + t.c2 + '10 100%)';
 
