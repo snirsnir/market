@@ -1154,7 +1154,7 @@ const firebaseConfig = {
   databaseURL: "https://market-ddfe6-default-rtdb.europe-west1.firebasedatabase.app/"
 };
 const GEMINI_API_KEY  = "AQ.Ab8RN6KRfiO5i8_j1ynswhJzYyCa4vEu-FvnWgWdFo6upysdJA";
-const GEMINI_MODEL    = "gemini-1.5-flash";
+const GEMINI_MODEL    = "gemini-2.0-flash";
 const EMAILJS_SERVICE = "service_7j1s4pl";
 const EMAILJS_TEMPLATE= "template_4jpm77j";
 const EMAILJS_PUBLIC_KEY = "Y0yqKFQQ4ONQ4j396";
@@ -1477,17 +1477,23 @@ function updateCart() {
   const list = document.getElementById('items-list');
   const emptyState = document.getElementById('empty-state');
 
+  // Always detach emptyState before touching innerHTML (prevents null after innerHTML='')
+  if (emptyState && emptyState.parentNode === list) {
+    list.removeChild(emptyState);
+  }
+
   if (count === 0) {
     list.innerHTML = '';
-    list.appendChild(emptyState);
-    emptyState.style.display = '';
+    if (emptyState) {
+      emptyState.style.display = '';
+      list.appendChild(emptyState);
+    }
     return;
   }
 
-  emptyState.style.display = 'none';
+  if (emptyState) emptyState.style.display = 'none';
 
   // Re-render items
-  // Keep empty state element detached while rendering
   list.innerHTML = '';
 
   cartItems.forEach((item, idx) => {
@@ -1612,6 +1618,10 @@ async function generateProductSummary(item) {
         })
       }
     );
+    if (!resp.ok) {
+      console.warn('Gemini API error:', resp.status);
+      return '';
+    }
     const data = await resp.json();
     return (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
   } catch(e) {
@@ -1665,6 +1675,9 @@ async function onScanSuccess(decodedText) {
         item.aiSummaryLoading = false;
         if (summary) item.aiSummary = summary;
         saveItemsToFirebase();
+        updateCart();
+      }).catch(function() {
+        item.aiSummaryLoading = false;
         updateCart();
       });
     }
