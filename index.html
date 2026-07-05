@@ -123,6 +123,7 @@
       gap: 0;
       position: relative;
       overflow: hidden;
+      transition: background 0.6s ease;
     }
     #screen-login::before {
       content: '';
@@ -1045,11 +1046,11 @@ function avatarUrl(av) {
 }
 
 const THEMES = [
-  { id:'ocean',  name:'גלים',   emoji:'🌊', c1:'#0066cc', c2:'#29ABE2' },
-  { id:'sunset', name:'שקיעה',  emoji:'🌅', c1:'#FF4500', c2:'#F7941D' },
-  { id:'forest', name:'יער',    emoji:'🌿', c1:'#2d7a2d', c2:'#8DC63F' },
-  { id:'galaxy', name:'גלקסיה',emoji:'🌌', c1:'#5500cc', c2:'#aa44ff' },
-  { id:'berry',  name:'תות',    emoji:'🍓', c1:'#cc0055', c2:'#ff3388' },
+  { id:'ocean',  name:'גלים',   emoji:'🌊', c1:'#0066cc', c2:'#29ABE2', dark:'#002a66' },
+  { id:'sunset', name:'שקיעה',  emoji:'🌅', c1:'#FF4500', c2:'#F7941D', dark:'#7a1500' },
+  { id:'forest', name:'יער',    emoji:'🌿', c1:'#2d7a2d', c2:'#8DC63F', dark:'#0f3d0f' },
+  { id:'galaxy', name:'גלקסיה',emoji:'🌌', c1:'#5500cc', c2:'#aa44ff', dark:'#220066' },
+  { id:'berry',  name:'תות',    emoji:'🍓', c1:'#cc0055', c2:'#ff3388', dark:'#660028' },
 ];
 
 const firebaseConfig = {
@@ -1148,6 +1149,11 @@ function selectTheme(id) {
   document.querySelectorAll('.theme-btn').forEach(function(btn) {
     btn.classList.toggle('selected', btn.dataset.id === id);
   });
+  if (selectedTheme) {
+    const t = selectedTheme;
+    document.getElementById('screen-login').style.background =
+      'linear-gradient(160deg, ' + t.dark + ' 0%, ' + t.c1 + ' 38%, ' + t.c2 + ' 72%, ' + t.c2 + 'cc 100%)';
+  }
   updateStartBtn();
 }
 
