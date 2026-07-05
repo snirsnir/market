@@ -809,6 +809,31 @@
     }
     .btn-start:disabled { opacity: 0.45; cursor: not-allowed; }
 
+    /* ─── Theme Picker ──────────────────────────────────── */
+    .theme-section { margin-top: 18px; }
+    .theme-section-label { font-size: 13px; font-weight: 700; color: #0066cc; margin-bottom: 10px; display: block; }
+    .theme-grid {
+      display: flex; gap: 8px; justify-content: center;
+    }
+    .theme-btn {
+      background: none; border: 3px solid transparent; border-radius: 14px;
+      cursor: pointer; padding: 4px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      flex: 1;
+    }
+    .theme-btn:hover { transform: scale(1.08); }
+    .theme-swatch {
+      width: 100%; aspect-ratio: 1/1; border-radius: 10px; display: block;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
+    .theme-label { font-size: 9px; font-weight: 700; color: #555; white-space: nowrap; }
+    .theme-btn.selected {
+      border-color: #FF6600;
+      transform: scale(1.12);
+      box-shadow: 0 0 12px rgba(255,102,0,0.55);
+    }
+
     /* ─── Cart Avatar ────────────────────────────────────── */
     .cart-avatar-display {
       width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
@@ -840,6 +865,10 @@
       <div class="avatar-section">
         <span class="avatar-section-label">🎭 בחר/י את הדמות שלך:</span>
         <div class="avatar-grid" id="avatar-grid"></div>
+      </div>
+      <div class="theme-section">
+        <span class="theme-section-label">🎨 בחר/י ערכת נושא:</span>
+        <div class="theme-grid" id="theme-grid"></div>
       </div>
       <button class="btn-start" id="btn-start" onclick="startSession()" disabled>🛒 בואו נתחיל!</button>
     </div>
@@ -1015,6 +1044,14 @@ function avatarUrl(av) {
   return DICEBEAR + av.seed + '&backgroundColor=' + av.hex;
 }
 
+const THEMES = [
+  { id:'ocean',  name:'גלים',   emoji:'🌊', c1:'#0066cc', c2:'#29ABE2' },
+  { id:'sunset', name:'שקיעה',  emoji:'🌅', c1:'#FF4500', c2:'#F7941D' },
+  { id:'forest', name:'יער',    emoji:'🌿', c1:'#2d7a2d', c2:'#8DC63F' },
+  { id:'galaxy', name:'גלקסיה',emoji:'🌌', c1:'#5500cc', c2:'#aa44ff' },
+  { id:'berry',  name:'תות',    emoji:'🍓', c1:'#cc0055', c2:'#ff3388' },
+];
+
 const firebaseConfig = {
   apiKey: "AIzaSyDNy5LNznYZv-8zDjjqoOhOMNDzHmVaVnc",
   authDomain: "market-ddfe6.firebaseapp.com",
@@ -1038,6 +1075,7 @@ let sessionId   = null;
 let sessionName = "";
 let cartItems   = [];  // [{ barcode, name, emoji, carbs, protein, fat, vitamins, aiFact }]
 let selectedAvatar = null;
+let selectedTheme  = null;
 let qrScanner   = null;
 let scannerActive = false;
 let reportData  = null;
@@ -1078,7 +1116,39 @@ function selectAvatar(id) {
 function updateStartBtn() {
   const nameVal = (document.getElementById('name-input').value || '').trim();
   const btn = document.getElementById('btn-start');
-  if (btn) btn.disabled = !(nameVal && selectedAvatar);
+  if (btn) btn.disabled = !(nameVal && selectedAvatar && selectedTheme);
+}
+
+/* ══════════════════════════════════════════════════════════
+   THEME
+══════════════════════════════════════════════════════════ */
+function buildThemeGrid() {
+  const grid = document.getElementById('theme-grid');
+  if (!grid) return;
+  THEMES.forEach(function(t) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'theme-btn';
+    btn.dataset.id = t.id;
+    const swatch = document.createElement('span');
+    swatch.className = 'theme-swatch';
+    swatch.style.background = 'linear-gradient(135deg, ' + t.c1 + ', ' + t.c2 + ')';
+    const label = document.createElement('span');
+    label.className = 'theme-label';
+    label.textContent = t.emoji + ' ' + t.name;
+    btn.appendChild(swatch);
+    btn.appendChild(label);
+    btn.addEventListener('click', function() { selectTheme(t.id); });
+    grid.appendChild(btn);
+  });
+}
+
+function selectTheme(id) {
+  selectedTheme = THEMES.find(function(t) { return t.id === id; }) || null;
+  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+    btn.classList.toggle('selected', btn.dataset.id === id);
+  });
+  updateStartBtn();
 }
 
 function getAvatarSvg(id, size) {
@@ -1103,8 +1173,9 @@ window.onload = function () {
     if (e.key === 'Enter') startSession();
   });
 
-  // Build avatar grid and wire up name input
+  // Build avatar + theme grids and wire up name input
   buildAvatarGrid();
+  buildThemeGrid();
   document.getElementById('name-input').addEventListener('input', updateStartBtn);
 
   // Restore session from localStorage
@@ -1118,6 +1189,9 @@ window.onload = function () {
         const session = snap.val();
         if (session.avatar) {
           selectedAvatar = AVATARS.find(function(a) { return a.id === session.avatar; }) || null;
+        }
+        if (session.theme) {
+          selectedTheme = THEMES.find(function(t) { return t.id === session.theme; }) || null;
         }
         if (session.status === 'shopping') {
           cartItems = session.items ? Object.values(session.items) : [];
@@ -1182,6 +1256,10 @@ async function startSession() {
     showToast('❗ אנא בחר/י דמות', 'error');
     return;
   }
+  if (!selectedTheme) {
+    showToast('❗ אנא בחר/י ערכת נושא', 'error');
+    return;
+  }
 
   sessionId   = generateId();
   sessionName = name;
@@ -1193,12 +1271,18 @@ async function startSession() {
   await db.ref('sessions/' + sessionId).set({
     name,
     avatar:    selectedAvatar.id,
+    theme:     selectedTheme.id,
     status:    'shopping',
     createdAt: Date.now(),
     items:     []
   });
 
   showScreen('screen-cart');
+  // Apply theme to cart header
+  if (selectedTheme) {
+    const hdr = document.querySelector('.cart-header');
+    if (hdr) hdr.style.background = 'linear-gradient(135deg, ' + selectedTheme.c1 + ' 0%, ' + selectedTheme.c2 + ' 100%)';
+  }
   updateCart();
 }
 

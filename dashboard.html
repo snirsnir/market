@@ -494,6 +494,14 @@
     return DICEBEAR + av.seed + '&backgroundColor=' + av.hex;
   }
 
+  const THEMES = [
+    { id:'ocean',  name:'גלים',   emoji:'🌊', c1:'#0066cc', c2:'#29ABE2' },
+    { id:'sunset', name:'שקיעה',  emoji:'🌅', c1:'#FF4500', c2:'#F7941D' },
+    { id:'forest', name:'יער',    emoji:'🌿', c1:'#2d7a2d', c2:'#8DC63F' },
+    { id:'galaxy', name:'גלקסיה',emoji:'🌌', c1:'#5500cc', c2:'#aa44ff' },
+    { id:'berry',  name:'תות',    emoji:'🍓', c1:'#cc0055', c2:'#ff3388' },
+  ];
+
   /* ═══════════════════════════════════════════════════════════════
      Connection state
   ═══════════════════════════════════════════════════════════════ */
@@ -599,7 +607,13 @@
 
     /* ── header ── */
     const header = document.createElement('div');
-    header.className = 'card-header ' + (statusClass[status] || 'status-default');
+    const themeObj = THEMES.find(function(t) { return t.id === session.theme; });
+    header.className = 'card-header';
+    if (themeObj) {
+      header.style.background = 'linear-gradient(135deg, ' + themeObj.c1 + ', ' + themeObj.c2 + ')';
+    } else {
+      header.classList.add(statusClass[status] || 'status-default');
+    }
 
     const nameEl = document.createElement('div');
     nameEl.className = 'card-name';
