@@ -165,6 +165,7 @@ document.getElementById('confirm-no').addEventListener('click', function() {
    IMAGE UPLOAD
 ===================================================== */
 var pendingImageBase64 = null;
+var pendingImageUrl    = null;
 
 function renderIcon(p, size) {
   if (!size) size = 28;
@@ -191,11 +192,29 @@ document.getElementById('f-image-upload').addEventListener('change', function(e)
   reader.readAsDataURL(file);
 });
 
+document.getElementById('f-image-url').addEventListener('input', function() {
+  var url = this.value.trim();
+  if (url) {
+    pendingImageUrl    = url;
+    pendingImageBase64 = null;
+    document.getElementById('img-preview').src = url;
+    document.getElementById('image-preview-area').style.display = '';
+  } else {
+    pendingImageUrl = null;
+    if (!pendingImageBase64) {
+      document.getElementById('img-preview').src = '';
+      document.getElementById('image-preview-area').style.display = 'none';
+    }
+  }
+});
+
 document.getElementById('btn-clear-image').addEventListener('click', function() {
   pendingImageBase64 = null;
+  pendingImageUrl    = null;
   document.getElementById('img-preview').src = '';
   document.getElementById('image-preview-area').style.display = 'none';
   document.getElementById('f-image-upload').value = '';
+  document.getElementById('f-image-url').value = '';
 });
 
 /* =====================================================
@@ -331,9 +350,11 @@ function openAddModal() {
   document.getElementById('f-barcode').removeAttribute('readonly');
   setEmojiPicker('🛒');
   pendingImageBase64 = null;
+  pendingImageUrl    = null;
   document.getElementById('img-preview').src = '';
   document.getElementById('image-preview-area').style.display = 'none';
   document.getElementById('f-image-upload').value = '';
+  document.getElementById('f-image-url').value = '';
   document.getElementById('f-carbs-range')._refresh(0);
   document.getElementById('f-protein-range')._refresh(0);
   document.getElementById('f-fat-range')._refresh(0);
@@ -358,10 +379,13 @@ function openEditModal(barcode) {
   document.getElementById('f-vitamins').value = (p.vitamins !== undefined && p.vitamins !== null) ? p.vitamins : '';
   document.getElementById('f-ai-fact').value  = p.aiFact  || '';
   setEmojiPicker(p.emoji || '🛒');
-  pendingImageBase64 = p.image || null;
+  var isBase64 = p.image && p.image.startsWith('data:');
+  pendingImageBase64 = isBase64 ? p.image : null;
+  pendingImageUrl    = (!isBase64 && p.image) ? p.image : null;
   document.getElementById('f-image-upload').value = '';
-  if (pendingImageBase64) {
-    document.getElementById('img-preview').src = pendingImageBase64;
+  document.getElementById('f-image-url').value = pendingImageUrl || '';
+  if (p.image) {
+    document.getElementById('img-preview').src = p.image;
     document.getElementById('image-preview-area').style.display = '';
   } else {
     document.getElementById('img-preview').src = '';
@@ -402,7 +426,7 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
   var productData = {
     name: name,
     emoji: emoji,
-    image: pendingImageBase64 || null,
+    image: pendingImageBase64 || pendingImageUrl || null,
     carbs: carbs,
     protein: protein,
     fat: fat,

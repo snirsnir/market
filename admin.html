@@ -892,11 +892,13 @@
             <img id="img-preview" alt="תצוגה מקדימה" />
             <button type="button" id="btn-clear-image" class="btn btn-outline" style="font-size:.8rem;padding:.3rem .65rem;">✕ הסר תמונה</button>
           </div>
-          <div>
-            <label class="btn btn-outline" for="f-image-upload" style="cursor:pointer;font-size:.85rem;display:inline-block;">📷 בחר תמונה</label>
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+            <label class="btn btn-outline" for="f-image-upload" style="cursor:pointer;font-size:.85rem;white-space:nowrap;">📷 בחר קובץ</label>
             <input type="file" id="f-image-upload" accept="image/png,image/webp,image/jpeg,image/gif" style="display:none;" />
+            <span style="color:#aaa;font-size:.82rem;">או</span>
+            <input type="url" id="f-image-url" class="form-control" placeholder="🔗 הדבק קישור לתמונה..." style="flex:1;min-width:150px;font-size:.83rem;" />
           </div>
-          <p class="form-hint">PNG ללא רקע מומלץ • מקסימום 500KB • תחליף את האימוג'י אם תיבחר</p>
+          <p class="form-hint">PNG ללא רקע מומלץ • מקסימום 500KB לקובץ • גם URL ישיר עובד</p>
         </div>
       </div>
 

@@ -512,8 +512,14 @@
       border-right: 3px solid var(--blue);
       font-size: 12px;
       color: var(--charcoal);
-      line-height: 1.5;
+      line-height: 1.6;
+    }
+    .item-fact-loading {
+      background: linear-gradient(135deg, #f5f7fa, #eef1f5);
+      border-right-color: #ccc;
+      color: #aaa;
       font-style: italic;
+      animation: pulse 1.4s ease-in-out infinite;
     }
 
     /* Sticky action bar */
@@ -1514,7 +1520,11 @@ function updateCart() {
         </div>
         <button class="item-delete" onclick="removeItem('${item.barcode}')" aria-label="הסר מוצר">✕</button>
       </div>
-      ${isNewest && item.aiFact ? `<div class="item-fact">💡 ${escHtml(item.aiFact)}</div>` : ''}
+      ${item.aiSummary
+        ? `<div class="item-fact">🔬 ${escHtml(item.aiSummary)}</div>`
+        : item.aiSummaryLoading
+          ? `<div class="item-fact item-fact-loading">🔬 מנתח את המוצר...</div>`
+          : ''}
     `;
     list.appendChild(card);
   });
@@ -1541,8 +1551,13 @@ async function removeItem(barcode) {
 }
 
 async function saveItemsToFirebase() {
+  const toSave = cartItems.map(function(item) {
+    const c = Object.assign({}, item);
+    delete c.aiSummaryLoading;
+    return c;
+  });
   await db.ref('sessions/' + sessionId).update({
-    items:     cartItems,
+    items:     toSave,
     itemCount: cartItems.length
   });
 }
@@ -1589,6 +1604,29 @@ function closeScanner() {
   showScreen('screen-cart');
 }
 
+async function generateProductSummary(item) {
+  if (!item.aiFact) return '';
+  const prompt = 'אתה מדריך מוזיאון מדע בטכנודע. כתוב בדיוק 2 שורות קצרות ומרתקות על המוצר "' + item.name + '" לילדים המבקרים. אל תוסיף כותרת, רק שתי שורות. מידע מדעי: ' + item.aiFact;
+  try {
+    const resp = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_API_KEY,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 130, temperature: 0.75 }
+        })
+      }
+    );
+    const data = await resp.json();
+    return (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  } catch(e) {
+    console.warn('Product summary error:', e);
+    return '';
+  }
+}
+
 async function onScanSuccess(decodedText) {
   stopQrScanner();
 
@@ -1618,15 +1656,25 @@ async function onScanSuccess(decodedText) {
       protein:  product.protein  || 0,
       fat:      product.fat      || 0,
       vitamins: product.vitamins || 0,
-      aiFact:   product.aiFact   || ''
+      aiFact:   product.aiFact   || '',
+      aiSummaryLoading: !!(product.aiFact)
     };
 
     cartItems.unshift(item);
     await saveItemsToFirebase();
-
     closeScanner();
     updateCart();
     showToast('✅ ' + item.name + ' נוסף לסל!', 'success');
+
+    // Generate 2-line AI summary in background (non-blocking)
+    if (item.aiFact) {
+      generateProductSummary(item).then(function(summary) {
+        item.aiSummaryLoading = false;
+        if (summary) item.aiSummary = summary;
+        saveItemsToFirebase();
+        updateCart();
+      });
+    }
   } catch (err) {
     console.error('Scan error:', err);
     showToast('❌ שגיאה בטעינת המוצר', 'error');
