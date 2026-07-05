@@ -916,6 +916,90 @@
       filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35));
     }
     .cart-avatar-display img { width: 46px; height: 46px; display: block; border-radius: 50%; }
+
+    /* ─── Scan Popup ──────────────────────────────────────── */
+    .scan-popup-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      display: flex; align-items: flex-end; justify-content: center;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(3px);
+      animation: spFadeIn 0.25s ease;
+    }
+    @keyframes spFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .scan-popup-card {
+      width: 100%; max-width: 480px;
+      background: #fff;
+      border-radius: 28px 28px 0 0;
+      padding: 0 0 env(safe-area-inset-bottom, 12px);
+      box-shadow: 0 -8px 48px rgba(0,0,0,0.28);
+      animation: spSlideUp 0.38s cubic-bezier(0.22,1,0.36,1);
+      overflow: hidden;
+    }
+    @keyframes spSlideUp {
+      from { transform: translateY(100%); opacity: 0.5; }
+      to   { transform: translateY(0);    opacity: 1;   }
+    }
+
+    .scan-popup-header {
+      padding: 18px 20px 14px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .scan-popup-product-img {
+      width: 62px; height: 62px; border-radius: 14px;
+      object-fit: contain; background: #f5f5f5;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+    }
+    .scan-popup-product-img img { width: 62px; height: 62px; border-radius: 14px; object-fit: contain; }
+    .scan-popup-product-name {
+      font-size: 1.3rem; font-weight: 800; color: #222;
+      line-height: 1.2;
+    }
+    .scan-popup-product-sub {
+      font-size: 0.82rem; color: #999; margin-top: 2px;
+    }
+
+    .scan-popup-ai {
+      margin: 0 16px 16px;
+      background: linear-gradient(135deg, #f0f7ff 0%, #fff8f0 100%);
+      border-radius: 16px;
+      padding: 16px 18px;
+      min-height: 80px;
+      display: flex; align-items: center; gap: 12px;
+      border: 1.5px solid rgba(0,102,204,0.1);
+    }
+    .scan-popup-ai-icon { font-size: 2rem; flex-shrink: 0; }
+    .scan-popup-ai-text {
+      font-size: 0.95rem; line-height: 1.65; color: #2a2a2a; font-weight: 500;
+      flex: 1;
+    }
+    .scan-popup-ai-text.loading {
+      color: #999; font-style: italic;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sp-dots { display: inline-flex; gap: 4px; }
+    .sp-dots span {
+      width: 7px; height: 7px; border-radius: 50%; background: #ccc;
+      animation: spDot 1.2s infinite ease-in-out;
+    }
+    .sp-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .sp-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes spDot { 0%,80%,100%{transform:scale(0.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
+
+    .scan-popup-footer {
+      padding: 0 16px 16px;
+    }
+    .scan-popup-btn {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, #FF6600, #F7941D, #FFB320);
+      color: #fff; border: none; border-radius: 14px;
+      font-size: 1.05rem; font-weight: 800; cursor: pointer;
+      letter-spacing: 0.3px;
+      box-shadow: 0 4px 14px rgba(255,102,0,0.35);
+      transition: transform 0.1s;
+    }
+    .scan-popup-btn:active { transform: scale(0.97); }
   </style>
 </head>
 <body>
@@ -1519,11 +1603,6 @@ function updateCart() {
         </div>
         <button class="item-delete" onclick="removeItem('${item.barcode}')" aria-label="הסר מוצר">✕</button>
       </div>
-      ${item.aiSummary
-        ? `<div class="item-fact">🔬 ${escHtml(item.aiSummary)}</div>`
-        : item.aiSummaryLoading
-          ? `<div class="item-fact item-fact-loading">🔬 מנתח את המוצר...</div>`
-          : ''}
     `;
     list.appendChild(card);
   });
@@ -1603,9 +1682,79 @@ function closeScanner() {
   showScreen('screen-cart');
 }
 
+/* ── Scan popup ──────────────────────────────────── */
+var scanPopupTimer = null;
+
+function showScanPopup(item) {
+  const popup  = document.getElementById('scan-popup');
+  const imgEl  = document.getElementById('sp-img');
+  const nameEl = document.getElementById('sp-name');
+  const textEl = document.getElementById('sp-text');
+  const aiBox  = document.getElementById('sp-ai');
+
+  // Product icon/image
+  if (item.image) {
+    imgEl.innerHTML = '<img src="' + escAttr(item.image) + '" />';
+  } else {
+    imgEl.textContent = item.emoji || '📦';
+  }
+  nameEl.textContent = item.name;
+
+  // Reset to loading state
+  textEl.className = 'scan-popup-ai-text loading';
+  textEl.innerHTML = '<span>מנתח עבורכם</span><span class="sp-dots"><span></span><span></span><span></span></span>';
+  aiBox.querySelector('.scan-popup-ai-icon').textContent = '🔬';
+
+  // Apply theme color to header
+  const t = THEMES.find(x => x.id === currentTheme) || THEMES[0];
+  document.querySelector('.scan-popup-header').style.background =
+    'linear-gradient(135deg,' + t.c1 + '18 0%,' + t.c2 + '10 100%)';
+
+  popup.style.display = 'flex';
+
+  // Auto-close after 9 sec
+  if (scanPopupTimer) clearTimeout(scanPopupTimer);
+  scanPopupTimer = setTimeout(closeScanPopup, 9000);
+}
+
+function updateScanPopup(text) {
+  const textEl = document.getElementById('sp-text');
+  const aiBox  = document.getElementById('sp-ai');
+  if (!textEl || document.getElementById('scan-popup').style.display === 'none') return;
+
+  if (text) {
+    textEl.className = 'scan-popup-ai-text';
+    textEl.textContent = text;
+    aiBox.querySelector('.scan-popup-ai-icon').textContent = '✨';
+  } else {
+    // No AI text — hide the box
+    aiBox.style.display = 'none';
+  }
+}
+
+function closeScanPopup() {
+  if (scanPopupTimer) { clearTimeout(scanPopupTimer); scanPopupTimer = null; }
+  const popup = document.getElementById('scan-popup');
+  popup.style.display = 'none';
+  document.getElementById('sp-ai').style.display = '';
+}
+
+function playBeep() {
+  try {
+    var audio = new Audio('peep.mp3');
+    audio.volume = 0.7;
+    audio.play().catch(function() {});
+  } catch(e) {}
+}
+
 async function generateProductSummary(item) {
   if (!item.aiFact) return '';
-  const prompt = 'אתה מדריך מוזיאון מדע בטכנודע. כתוב בדיוק 2 שורות קצרות ומרתקות על המוצר "' + item.name + '" לילדים המבקרים. אל תוסיף כותרת, רק שתי שורות. מידע מדעי: ' + item.aiFact;
+  const prompt =
+    'אתה מדריך מוזיאון מדע בטכנודע. ילדים הוסיפו את המוצר "' + item.name + '" לסל הקניות שלהם.' +
+    ' כתוב בדיוק 3 שורות עברית קצרות, מהנות ומרתקות לילדים:' +
+    ' שורה ראשונה: פתח עם "יפה! הוספתם ' + item.name + ' לסל!" ואמוג\'י מתאים.' +
+    ' שורה שניה ושלישית: עובדה מדעית מפתיעה ומגניבה על המוצר הזה.' +
+    ' אל תוסיף כותרת, רק 3 שורות. מידע מדעי: ' + item.aiFact;
   try {
     const resp = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_API_KEY,
@@ -1614,7 +1763,7 @@ async function generateProductSummary(item) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 130, temperature: 0.75 }
+          generationConfig: { maxOutputTokens: 150, temperature: 0.8 }
         })
       }
     );
@@ -1659,28 +1808,28 @@ async function onScanSuccess(decodedText) {
       protein:  product.protein  || 0,
       fat:      product.fat      || 0,
       vitamins: product.vitamins || 0,
-      aiFact:   product.aiFact   || '',
-      aiSummaryLoading: !!(product.aiFact)
+      aiFact:   product.aiFact   || ''
     };
 
     cartItems.unshift(item);
     await saveItemsToFirebase();
+    playBeep();
     closeScanner();
     updateCart();
-    showToast('✅ ' + item.name + ' נוסף לסל!', 'success');
+    showScanPopup(item);
 
-    // Generate 2-line AI summary in background (non-blocking)
-    if (item.aiFact) {
-      generateProductSummary(item).then(function(summary) {
-        item.aiSummaryLoading = false;
-        if (summary) item.aiSummary = summary;
-        saveItemsToFirebase();
-        updateCart();
-      }).catch(function() {
-        item.aiSummaryLoading = false;
-        updateCart();
-      });
-    }
+    // Generate AI popup text in background (non-blocking)
+    generateProductSummary(item).then(function(summary) {
+      item.aiSummaryLoading = false;
+      if (summary) item.aiSummary = summary;
+      updateScanPopup(summary);
+      saveItemsToFirebase();
+      updateCart();
+    }).catch(function() {
+      item.aiSummaryLoading = false;
+      updateScanPopup('');
+      updateCart();
+    });
   } catch (err) {
     console.error('Scan error:', err);
     showToast('❌ שגיאה בטעינת המוצר', 'error');
@@ -1848,5 +1997,28 @@ async function sendEmail() {
   }
 }
 </script>
+
+<!-- Scan Success Popup -->
+<div id="scan-popup" class="scan-popup-overlay" style="display:none;">
+  <div class="scan-popup-card">
+    <div class="scan-popup-header" id="sp-header">
+      <div class="scan-popup-product-img" id="sp-img"></div>
+      <div>
+        <div class="scan-popup-product-name" id="sp-name"></div>
+        <div class="scan-popup-product-sub">✅ נוסף לסל בהצלחה!</div>
+      </div>
+    </div>
+    <div class="scan-popup-ai" id="sp-ai">
+      <div class="scan-popup-ai-icon">🔬</div>
+      <div class="scan-popup-ai-text loading" id="sp-text">
+        <span>מנתח עבורכם</span>
+        <span class="sp-dots"><span></span><span></span><span></span></span>
+      </div>
+    </div>
+    <div class="scan-popup-footer">
+      <button class="scan-popup-btn" onclick="closeScanPopup()">המשיכו לסרוק 🛒</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
