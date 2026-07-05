@@ -368,41 +368,26 @@
       flex: 1;
     }
     .flask {
-      width: 52px;
-      height: 84px;
-      border: 2.5px solid rgba(0,0,0,0.18);
-      border-top: none;
-      border-radius: 0 0 14px 14px;
+      width: 56px;
+      height: 88px;
+      border: 2.5px solid rgba(0,0,0,0.14);
+      border-radius: 10px 10px 22px 22px;
       position: relative;
       overflow: hidden;
-      background: rgba(240,248,255,0.55);
+      background: rgba(235,245,255,0.5);
       box-shadow:
-        inset 5px 0 9px rgba(255,255,255,0.6),
-        inset -2px 0 4px rgba(0,0,0,0.04),
-        0 2px 8px rgba(0,0,0,0.07);
+        inset 6px 0 10px rgba(255,255,255,0.65),
+        inset -3px 0 6px rgba(0,0,0,0.04),
+        0 3px 10px rgba(0,0,0,0.08);
     }
     .flask::before {
       content: '';
       position: absolute;
-      top: -7px; left: -5px; right: -5px;
-      height: 7px;
-      border: 2.5px solid rgba(0,0,0,0.18);
-      border-bottom: none;
-      border-radius: 4px 4px 0 0;
-      background: rgba(240,248,255,0.7);
+      top: 0; left: 6px;
+      width: 8px; height: 60%;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0));
+      border-radius: 4px;
       z-index: 5;
-    }
-    .flask::after {
-      content: '';
-      position: absolute;
-      top: 8px; bottom: 8px; right: 8px;
-      width: 7px;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px, transparent 14px,
-        rgba(0,0,0,0.09) 14px, rgba(0,0,0,0.09) 15px
-      );
-      z-index: 4;
       pointer-events: none;
     }
     .flask-liquid {
@@ -437,6 +422,10 @@
       color: #333;
       text-align: center;
       min-height: 15px;
+    }
+    .flask-icon {
+      font-size: 18px;
+      line-height: 1;
     }
 
     /* Items */
@@ -997,6 +986,7 @@
             </div>
             <div class="flask-name">פחמימות</div>
             <div class="flask-val" id="fv-carbs">—</div>
+            <div class="flask-icon">🌾</div>
           </div>
           <div class="flask-wrap">
             <div class="flask">
@@ -1004,6 +994,7 @@
             </div>
             <div class="flask-name">חלבונים</div>
             <div class="flask-val" id="fv-protein">—</div>
+            <div class="flask-icon">💪</div>
           </div>
           <div class="flask-wrap">
             <div class="flask">
@@ -1011,6 +1002,7 @@
             </div>
             <div class="flask-name">שומנים</div>
             <div class="flask-val" id="fv-fat">—</div>
+            <div class="flask-icon">🥑</div>
           </div>
           <div class="flask-wrap">
             <div class="flask">
@@ -1018,6 +1010,7 @@
             </div>
             <div class="flask-name">ויטמינים</div>
             <div class="flask-val" id="fv-vitamins">—</div>
+            <div class="flask-icon">🍊</div>
           </div>
         </div>
       </div>
