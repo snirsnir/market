@@ -772,7 +772,7 @@
       display: flex; flex-direction: column; align-items: center; gap: 3px;
       transition: transform 0.15s, border-color 0.15s, filter 0.15s;
     }
-    .avatar-btn svg { width: 52px; height: 52px; display: block; }
+    .avatar-btn .av-img { width: 58px; height: 58px; display: block; border-radius: 50%; object-fit: cover; }
     .avatar-btn .av-label { font-size: 8.5px; font-weight: 600; color: #888; text-align: center; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; }
     .avatar-btn:hover { transform: scale(1.1); }
     .avatar-btn.selected {
@@ -787,7 +787,7 @@
       width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
       filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35));
     }
-    .cart-avatar-display svg { width: 46px; height: 46px; display: block; }
+    .cart-avatar-display img { width: 46px; height: 46px; display: block; border-radius: 50%; }
   </style>
 </head>
 <body>
@@ -968,20 +968,25 @@
 /* ══════════════════════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════════════════════ */
+const DICEBEAR = 'https://api.dicebear.com/10.x/bottts/svg?seed=';
 const AVATARS = [
-  { id:'blue-cool',      name:'כחול מגניב',    color:'#29ABE2', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#29ABE2"/><rect x="13" y="22" width="14" height="9" rx="4.5" fill="#1a1a2e" opacity="0.85"/><rect x="33" y="22" width="14" height="9" rx="4.5" fill="#1a1a2e" opacity="0.85"/><rect x="26" y="25" width="8" height="3" rx="1.5" fill="#1a1a2e" opacity="0.85"/><path d="M19 40 Q30 48 41 40" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="18" cy="14" rx="7" ry="4" fill="white" opacity="0.18"/></svg>' },
-  { id:'orange-happy',   name:'כתום שמח',      color:'#F7941D', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#F7941D"/><circle cx="20" cy="26" r="5.5" fill="white"/><circle cx="40" cy="26" r="5.5" fill="white"/><circle cx="21" cy="27" r="3.2" fill="#333"/><circle cx="41" cy="27" r="3.2" fill="#333"/><circle cx="22" cy="26" r="1.2" fill="white"/><circle cx="42" cy="26" r="1.2" fill="white"/><ellipse cx="13" cy="35" rx="6" ry="3.5" fill="#d4680a" opacity="0.45"/><ellipse cx="47" cy="35" rx="6" ry="3.5" fill="#d4680a" opacity="0.45"/><path d="M17 38 Q30 50 43 38" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/></svg>' },
-  { id:'green-smart',    name:'ירוק חכם',      color:'#8DC63F', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#8DC63F"/><circle cx="20" cy="26" r="7" fill="white" stroke="#555" stroke-width="2"/><circle cx="40" cy="26" r="7" fill="white" stroke="#555" stroke-width="2"/><line x1="27" y1="26" x2="33" y2="26" stroke="#555" stroke-width="2.5"/><circle cx="20" cy="27" r="4" fill="#29ABE2"/><circle cx="40" cy="27" r="4" fill="#29ABE2"/><circle cx="21" cy="26" r="1.5" fill="white"/><circle cx="41" cy="26" r="1.5" fill="white"/><path d="M20 41 Q30 47 40 41" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>' },
-  { id:'purple-magic',   name:'סגול קסום',     color:'#662D91', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#662D91"/><polygon points="20,17 21.5,21.5 26,23 21.5,24.5 20,29 18.5,24.5 14,23 18.5,21.5" fill="#FFD700"/><polygon points="40,19 41.2,22.8 45,24 41.2,25.2 40,29 38.8,25.2 35,24 38.8,22.8" fill="#FFD700"/><path d="M19 41 Q30 49 41 41" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="12" cy="12" r="2.5" fill="#FFD700" opacity="0.7"/><circle cx="50" cy="10" r="2" fill="#FFD700" opacity="0.6"/></svg>' },
-  { id:'red-energy',     name:'אדום אנרגטי',   color:'#BE1E2D', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#BE1E2D"/><circle cx="20" cy="26" r="6" fill="white"/><circle cx="40" cy="26" r="6" fill="white"/><circle cx="20" cy="26" r="3.5" fill="#333"/><circle cx="40" cy="26" r="3.5" fill="#333"/><circle cx="21" cy="25" r="1.3" fill="white"/><circle cx="41" cy="25" r="1.3" fill="white"/><path d="M19 38 L19 42 Q30 50 41 42 L41 38 Q30 44 19 38Z" fill="white"/><polygon points="10,14 12,8 14,14 20,14 15,18 17,24 12,20 7,24 9,18 4,14" fill="#FFD700" opacity="0.9"/></svg>' },
-  { id:'yellow-wink',    name:'צהוב שובב',     color:'#E6C200', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#F5D000"/><circle cx="20" cy="26" r="5.5" fill="white"/><circle cx="40" cy="26" r="5.5" fill="white"/><circle cx="21" cy="27" r="3" fill="#333"/><path d="M35 25 Q40 22 45 25" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="22" cy="26" r="1.2" fill="white"/><path d="M18 39 Q30 48 42 39" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/></svg>' },
-  { id:'pink-cute',      name:'ורוד חמוד',     color:'#EC008C', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#EC008C"/><circle cx="20" cy="26" r="5" fill="white"/><circle cx="40" cy="26" r="5" fill="white"/><circle cx="21" cy="27" r="3" fill="#333"/><circle cx="41" cy="27" r="3" fill="#333"/><circle cx="22" cy="26" r="1.2" fill="white"/><circle cx="42" cy="26" r="1.2" fill="white"/><ellipse cx="12" cy="35" rx="7" ry="4.5" fill="white" opacity="0.3"/><ellipse cx="48" cy="35" rx="7" ry="4.5" fill="white" opacity="0.3"/><path d="M22 40 Q30 47 38 40" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>' },
-  { id:'teal-cool',      name:'טורקיז',        color:'#00BCD4', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#00BCD4"/><circle cx="20" cy="28" r="5.5" fill="white"/><circle cx="40" cy="28" r="5.5" fill="white"/><circle cx="21" cy="29" r="3" fill="#0088a0"/><circle cx="41" cy="29" r="3" fill="#0088a0"/><circle cx="22" cy="28" r="1.2" fill="white"/><circle cx="42" cy="28" r="1.2" fill="white"/><path d="M20 40 Q30 46 40 40" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/><rect x="7" y="18" width="46" height="4" rx="2" fill="white" opacity="0.25"/></svg>' },
-  { id:'brown-freckles', name:'חום נמשי',      color:'#795548', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#795548"/><circle cx="20" cy="26" r="5" fill="white"/><circle cx="40" cy="26" r="5" fill="white"/><circle cx="21" cy="27" r="3" fill="#4e2c1e"/><circle cx="41" cy="27" r="3" fill="#4e2c1e"/><circle cx="22" cy="26" r="1.2" fill="white"/><circle cx="42" cy="26" r="1.2" fill="white"/><circle cx="13" cy="35" r="2" fill="#5a3a28" opacity="0.6"/><circle cx="17" cy="37" r="1.5" fill="#5a3a28" opacity="0.5"/><circle cx="47" cy="35" r="2" fill="#5a3a28" opacity="0.6"/><circle cx="43" cy="37" r="1.5" fill="#5a3a28" opacity="0.5"/><path d="M20 40 Q30 47 40 40" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>' },
-  { id:'mint-crown',     name:'כתר',           color:'#26A69A', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#26A69A"/><polygon points="13,18 18,8 23,16 28,6 33,16 38,8 43,18" fill="#FFD700" stroke="#e6b800" stroke-width="1"/><circle cx="20" cy="28" r="5" fill="white"/><circle cx="40" cy="28" r="5" fill="white"/><circle cx="21" cy="29" r="3" fill="#1a6e68"/><circle cx="41" cy="29" r="3" fill="#1a6e68"/><circle cx="22" cy="28" r="1.2" fill="white"/><circle cx="42" cy="28" r="1.2" fill="white"/><path d="M20 42 Q30 48 40 42" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>' },
-  { id:'peach-bunny',    name:'ארנב',          color:'#FF8A80', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><ellipse cx="21" cy="10" rx="5" ry="9" fill="#FF8A80"/><ellipse cx="39" cy="10" rx="5" ry="9" fill="#FF8A80"/><ellipse cx="21" cy="10" rx="3" ry="7" fill="#FFB3B3"/><ellipse cx="39" cy="10" rx="3" ry="7" fill="#FFB3B3"/><circle cx="30" cy="32" r="26" fill="#FF8A80"/><circle cx="20" cy="28" r="5" fill="white"/><circle cx="40" cy="28" r="5" fill="white"/><circle cx="21" cy="29" r="3" fill="#d4526e"/><circle cx="41" cy="29" r="3" fill="#d4526e"/><circle cx="22" cy="28" r="1.2" fill="white"/><circle cx="42" cy="28" r="1.2" fill="white"/><ellipse cx="13" cy="37" rx="6" ry="4" fill="#FF6B6B" opacity="0.4"/><ellipse cx="47" cy="37" rx="6" ry="4" fill="#FF6B6B" opacity="0.4"/><path d="M21 41 Q30 48 39 41" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>' },
-  { id:'indigo-bold',    name:'כחול-סגול',     color:'#3F51B5', svg:'<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="28" fill="#3F51B5"/><circle cx="20" cy="26" r="5.5" fill="white"/><circle cx="40" cy="26" r="5.5" fill="white"/><circle cx="21" cy="27" r="3.5" fill="#1a237e"/><circle cx="41" cy="27" r="3.5" fill="#1a237e"/><circle cx="22.5" cy="26" r="1.4" fill="white"/><circle cx="42.5" cy="26" r="1.4" fill="white"/><path d="M17 37 L17 40 Q30 48 43 40 L43 37 Q30 43 17 37Z" fill="white"/></svg>' }
+  { id:'spark',   name:'ספארק',  hex:'29ABE2', seed:'spark'    },
+  { id:'nova',    name:'נובה',   hex:'F7941D', seed:'nova'     },
+  { id:'zap',     name:'זאפ',    hex:'8DC63F', seed:'zap'      },
+  { id:'bolt',    name:'בולט',   hex:'7B2FBE', seed:'bolt'     },
+  { id:'pixel',   name:'פיקסל',  hex:'BE1E2D', seed:'pixel'    },
+  { id:'chip',    name:'צ\'יפ',  hex:'C8A200', seed:'chip'     },
+  { id:'byte',    name:'בייט',   hex:'EC008C', seed:'byte'     },
+  { id:'qubit',   name:'קוביט',  hex:'00A3C4', seed:'qubit'    },
+  { id:'laser',   name:'לייזר',  hex:'5C3D2E', seed:'laser'    },
+  { id:'comet',   name:'קומט',   hex:'1A7A6E', seed:'comet'    },
+  { id:'proton',  name:'פרוטון', hex:'D44000', seed:'proton'   },
+  { id:'atom',    name:'אטום',   hex:'3949AB', seed:'atom'     },
 ];
+
+function avatarUrl(av) {
+  return DICEBEAR + av.seed + '&backgroundColor=' + av.hex;
+}
 
 const firebaseConfig = {
   apiKey: "AIzaSyDNy5LNznYZv-8zDjjqoOhOMNDzHmVaVnc",
@@ -1016,12 +1021,20 @@ let reportData  = null;
 function buildAvatarGrid() {
   const grid = document.getElementById('avatar-grid');
   if (!grid) return;
-  AVATARS.forEach(av => {
+  AVATARS.forEach(function(av) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'avatar-btn';
     btn.dataset.id = av.id;
-    btn.innerHTML = av.svg + '<span class="av-label">' + av.name + '</span>';
+    const img = document.createElement('img');
+    img.src = avatarUrl(av);
+    img.className = 'av-img';
+    img.alt = av.name;
+    const label = document.createElement('span');
+    label.className = 'av-label';
+    label.textContent = av.name;
+    btn.appendChild(img);
+    btn.appendChild(label);
     btn.addEventListener('click', function() { selectAvatar(av.id); });
     grid.appendChild(btn);
   });
@@ -1044,7 +1057,7 @@ function updateStartBtn() {
 function getAvatarSvg(id, size) {
   const av = AVATARS.find(function(a) { return a.id === id; });
   if (!av) return '';
-  return '<span style="display:inline-block;width:' + size + 'px;height:' + size + 'px;border-radius:50%;overflow:hidden;flex-shrink:0;">' + av.svg + '</span>';
+  return '<img src="' + avatarUrl(av) + '" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;display:block;" alt="' + av.name + '" />';
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1186,7 +1199,7 @@ function updateCart() {
   // Avatar display
   const avatarDisplay = document.getElementById('cart-avatar-display');
   if (avatarDisplay && selectedAvatar) {
-    avatarDisplay.innerHTML = selectedAvatar.svg;
+    avatarDisplay.innerHTML = '<img src="' + avatarUrl(selectedAvatar) + '" style="width:46px;height:46px;border-radius:50%;display:block;" alt="" />';
   }
 
   // Progress
