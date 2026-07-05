@@ -239,7 +239,8 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 65%;
+      flex: 1;
+      min-width: 0;
     }
 
     .status-badge {
@@ -618,7 +619,6 @@
     const nameEl = document.createElement('div');
     nameEl.className = 'card-name';
     nameEl.textContent = name;
-    nameEl.style.cssText = 'flex:1;min-width:0;';
 
     const badgeEl = document.createElement('div');
     badgeEl.className = 'status-badge';

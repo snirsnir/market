@@ -1059,11 +1059,11 @@ function avatarUrl(av) {
 }
 
 const THEMES = [
-  { id:'ocean',  name:'גלים',   emoji:'🌊', c1:'#0066cc', c2:'#29ABE2', dark:'#002a66' },
-  { id:'sunset', name:'שקיעה',  emoji:'🌅', c1:'#FF4500', c2:'#F7941D', dark:'#7a1500' },
-  { id:'forest', name:'יער',    emoji:'🌿', c1:'#2d7a2d', c2:'#8DC63F', dark:'#0f3d0f' },
-  { id:'galaxy', name:'גלקסיה',emoji:'🌌', c1:'#5500cc', c2:'#aa44ff', dark:'#220066' },
-  { id:'berry',  name:'תות',    emoji:'🍓', c1:'#cc0055', c2:'#ff3388', dark:'#660028' },
+  { id:'ocean',  name:'גלים',   emoji:'🌊', c1:'#0066cc', c2:'#29ABE2', dark:'#002a66', light:'linear-gradient(160deg,#dff0ff 0%,#eef7ff 60%,#f5fbff 100%)' },
+  { id:'sunset', name:'שקיעה',  emoji:'🌅', c1:'#FF4500', c2:'#F7941D', dark:'#7a1500', light:'linear-gradient(160deg,#fff0e0 0%,#fff6ee 60%,#fff8ef 100%)' },
+  { id:'forest', name:'יער',    emoji:'🌿', c1:'#2d7a2d', c2:'#8DC63F', dark:'#0f3d0f', light:'linear-gradient(160deg,#e4f5e4 0%,#eef8ee 60%,#f4fbf4 100%)' },
+  { id:'galaxy', name:'גלקסיה',emoji:'🌌', c1:'#5500cc', c2:'#aa44ff', dark:'#220066', light:'linear-gradient(160deg,#efe4ff 0%,#f6eeff 60%,#fbf5ff 100%)' },
+  { id:'berry',  name:'תות',    emoji:'🍓', c1:'#cc0055', c2:'#ff3388', dark:'#660028', light:'linear-gradient(160deg,#ffe4ee 0%,#ffeef5 60%,#fff5f8 100%)' },
 ];
 
 const firebaseConfig = {
@@ -1297,10 +1297,18 @@ async function startSession() {
   });
 
   showScreen('screen-cart');
-  // Apply theme to cart header
+  // Apply theme to all screens
   if (selectedTheme) {
-    const hdr = document.querySelector('.cart-header');
-    if (hdr) hdr.style.background = 'linear-gradient(135deg, ' + selectedTheme.c1 + ' 0%, ' + selectedTheme.c2 + ' 100%)';
+    const t = selectedTheme;
+    const grad = 'linear-gradient(135deg, ' + t.c1 + ' 0%, ' + t.c2 + ' 100%)';
+    const cartHdr = document.querySelector('.cart-header');
+    if (cartHdr) cartHdr.style.background = grad;
+    const reportHdr = document.querySelector('.report-header');
+    if (reportHdr) reportHdr.style.background = grad;
+    const cartScreen = document.getElementById('screen-cart');
+    if (cartScreen) cartScreen.style.background = t.light;
+    const reportScreen = document.getElementById('screen-report');
+    if (reportScreen) reportScreen.style.background = t.light;
   }
   updateCart();
 }
