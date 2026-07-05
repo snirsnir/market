@@ -335,42 +335,109 @@
       font-weight: 500;
     }
 
-    /* Nutrient badges */
+    /* ─── Chemical Flasks ──────────────────────────────── */
+    @keyframes liquidWave {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
     .nutrients-card {
       background: var(--card-bg);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 16px 12px 14px;
       box-shadow: var(--shadow);
     }
     .nutrients-title {
       font-size: 13px;
       font-weight: 700;
       color: var(--charcoal);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
+      text-align: center;
     }
-    .nutrients-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+    .flasks-row {
+      display: flex;
+      gap: 6px;
+      justify-content: space-around;
+      align-items: flex-end;
     }
-    .nutrient-badge {
+    .flask-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      padding: 10px 6px;
-      border-radius: 12px;
-      background: #f5f7fa;
-      opacity: 0.3;
-      transition: opacity 0.3s, transform 0.3s, background 0.3s;
+      gap: 5px;
+      flex: 1;
     }
-    .nutrient-badge.active {
-      opacity: 1;
-      transform: scale(1.05);
-      background: #eef9ff;
+    .flask {
+      width: 52px;
+      height: 84px;
+      border: 2.5px solid rgba(0,0,0,0.18);
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      position: relative;
+      overflow: hidden;
+      background: rgba(240,248,255,0.55);
+      box-shadow:
+        inset 5px 0 9px rgba(255,255,255,0.6),
+        inset -2px 0 4px rgba(0,0,0,0.04),
+        0 2px 8px rgba(0,0,0,0.07);
     }
-    .nutrient-badge .nb-emoji { font-size: 22px; }
-    .nutrient-badge .nb-label { font-size: 10px; font-weight: 700; color: var(--charcoal); text-align: center; }
+    .flask::before {
+      content: '';
+      position: absolute;
+      top: -7px; left: -5px; right: -5px;
+      height: 7px;
+      border: 2.5px solid rgba(0,0,0,0.18);
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      background: rgba(240,248,255,0.7);
+      z-index: 5;
+    }
+    .flask::after {
+      content: '';
+      position: absolute;
+      top: 8px; bottom: 8px; right: 8px;
+      width: 7px;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px, transparent 14px,
+        rgba(0,0,0,0.09) 14px, rgba(0,0,0,0.09) 15px
+      );
+      z-index: 4;
+      pointer-events: none;
+    }
+    .flask-liquid {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 0%;
+      border-radius: 0 0 12px 12px;
+      transition: height 1.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+      overflow: hidden;
+      z-index: 2;
+    }
+    .flask-liquid::before {
+      content: '';
+      position: absolute;
+      top: -9px; left: 0;
+      width: 200%; height: 20px;
+      border-radius: 40%;
+      animation: liquidWave 2s linear infinite;
+      background: inherit;
+      opacity: 0.85;
+    }
+    .flask-name {
+      font-size: 10px;
+      font-weight: 700;
+      color: #555;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .flask-val {
+      font-size: 12px;
+      font-weight: 800;
+      color: #333;
+      text-align: center;
+      min-height: 15px;
+    }
 
     /* Items */
     .items-list {
@@ -914,25 +981,37 @@
         <p class="progress-text" id="progress-text">סרוק את המוצר הראשון שלך!</p>
       </div>
 
-      <!-- Nutrient badges -->
+      <!-- Chemical Flasks -->
       <div class="nutrients-card">
-        <div class="nutrients-title">🍽️ קבוצות מזון שגילית</div>
-        <div class="nutrients-row">
-          <div class="nutrient-badge" id="badge-carbs">
-            <span class="nb-emoji">🌾</span>
-            <span class="nb-label">פחמימות</span>
+        <div class="nutrients-title">⚗️ ניתוח הסל</div>
+        <div class="flasks-row">
+          <div class="flask-wrap">
+            <div class="flask">
+              <div class="flask-liquid" id="fl-carbs" style="background:#F7941D;"></div>
+            </div>
+            <div class="flask-name">פחמימות</div>
+            <div class="flask-val" id="fv-carbs">—</div>
           </div>
-          <div class="nutrient-badge" id="badge-protein">
-            <span class="nb-emoji">💪</span>
-            <span class="nb-label">חלבונים</span>
+          <div class="flask-wrap">
+            <div class="flask">
+              <div class="flask-liquid" id="fl-protein" style="background:#29ABE2;"></div>
+            </div>
+            <div class="flask-name">חלבונים</div>
+            <div class="flask-val" id="fv-protein">—</div>
           </div>
-          <div class="nutrient-badge" id="badge-fat">
-            <span class="nb-emoji">🥑</span>
-            <span class="nb-label">שומנים</span>
+          <div class="flask-wrap">
+            <div class="flask">
+              <div class="flask-liquid" id="fl-fat" style="background:#8DC63F;"></div>
+            </div>
+            <div class="flask-name">שומנים</div>
+            <div class="flask-val" id="fv-fat">—</div>
           </div>
-          <div class="nutrient-badge" id="badge-vitamins">
-            <span class="nb-emoji">🍊</span>
-            <span class="nb-label">ויטמינים</span>
+          <div class="flask-wrap">
+            <div class="flask">
+              <div class="flask-liquid" id="fl-vitamins" style="background:#662D91;"></div>
+            </div>
+            <div class="flask-name">ויטמינים</div>
+            <div class="flask-val" id="fv-vitamins">—</div>
           </div>
         </div>
       </div>
@@ -1360,18 +1439,25 @@ function updateCart() {
     ptext.textContent = '🎉 הגעת למקסימום!';
   }
 
-  // Nutrient badges
+  // Chemical flasks
   const totals = { carbs: 0, protein: 0, fat: 0, vitamins: 0 };
-  cartItems.forEach(item => {
+  cartItems.forEach(function(item) {
     totals.carbs    += Number(item.carbs    || 0);
     totals.protein  += Number(item.protein  || 0);
     totals.fat      += Number(item.fat      || 0);
     totals.vitamins += Number(item.vitamins || 0);
   });
-  document.getElementById('badge-carbs'  ).classList.toggle('active', totals.carbs    > 0);
-  document.getElementById('badge-protein').classList.toggle('active', totals.protein  > 0);
-  document.getElementById('badge-fat'    ).classList.toggle('active', totals.fat      > 0);
-  document.getElementById('badge-vitamins').classList.toggle('active', totals.vitamins > 0);
+  function setFlask(liqId, valId, value, max, unit) {
+    var pct = Math.min(93, Math.round(value / max * 100));
+    var liq = document.getElementById(liqId);
+    var val = document.getElementById(valId);
+    if (liq) liq.style.height = pct + '%';
+    if (val) val.textContent = value > 0 ? Math.round(value) + unit : '—';
+  }
+  setFlask('fl-carbs',    'fv-carbs',    totals.carbs,    150, 'g');
+  setFlask('fl-protein',  'fv-protein',  totals.protein,   50, 'g');
+  setFlask('fl-fat',      'fv-fat',      totals.fat,       50, 'g');
+  setFlask('fl-vitamins', 'fv-vitamins', totals.vitamins,  20, 'g');
 
   // Buttons
   const btnFinish = document.getElementById('btn-finish');
