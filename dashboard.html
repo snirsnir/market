@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>סופר-מדע | לוח חי</title>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Reset & Base ────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --charcoal: #414042;
+      --blue:     #29ABE2;
+      --green:    #8DC63F;
+      --purple:   #662D91;
+      --orange:   #F7941D;
+      --pink:     #EC008C;
+      --red:      #BE1E2D;
+      --yellow:   #f0d000;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: 'Rubik', 'Segoe UI', Arial, sans-serif;
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a15 100%);
+      color: #fff;
+    }
+
+    /* ── Layout ──────────────────────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────── */
+    #header {
+      flex: 0 0 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(41,171,226,0.25);
+      backdrop-filter: blur(6px);
+      position: relative;
+      z-index: 10;
+    }
+
+    #logo-area img {
+      height: 40px;
+      filter: brightness(0) invert(1);
+      opacity: 0.9;
+    }
+
+    #title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-shadow: 0 0 18px rgba(41,171,226,0.7);
+      white-space: nowrap;
+      animation: titlePulse 4s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% { opacity: 1;   text-shadow: 0 0 18px rgba(41,171,226,0.7); }
+      50%       { opacity: 0.82; text-shadow: 0 0 32px rgba(41,171,226,1); }
+    }
+
+    #right-panel {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    #clock {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px rgba(41,171,226,0.5);
+      direction: ltr;
+    }
+
+    #connection-badge {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid transparent;
+      transition: all 0.4s;
+    }
+    #connection-badge.connected {
+      border-color: var(--green);
+      color: var(--green);
+      box-shadow: 0 0 8px rgba(141,198,63,0.4);
+    }
+    #connection-badge.disconnected {
+      border-color: var(--red);
+      color: var(--red);
+      box-shadow: 0 0 8px rgba(190,30,45,0.4);
+    }
+
+    /* ── Grid ────────────────────────────────────────────────────── */
+    #grid-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+    #grid-wrapper::-webkit-scrollbar { width: 6px; }
+    #grid-wrapper::-webkit-scrollbar-track { background: transparent; }
+    #grid-wrapper::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+    #cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      align-content: start;
+    }
+
+    /* ── Empty State ─────────────────────────────────────────────── */
+    #empty-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 20px;
+    }
+    #empty-state.visible { display: flex; }
+
+    #empty-emoji {
+      font-size: 100px;
+      line-height: 1;
+      animation: breathe 3s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { transform: scale(1);    opacity: 0.9; }
+      50%       { transform: scale(1.08); opacity: 1;   }
+    }
+
+    #empty-text {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 1px;
+    }
+
+    /* ── Session Card ────────────────────────────────────────────── */
+    .session-card {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      min-height: 200px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      animation: slideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+      position: relative;
+      transition: box-shadow 0.4s, transform 0.3s;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(30px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* celebration border */
+    .session-card.celebrating {
+      animation: slideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both,
+                 celebrationGlow 1.8s ease-in-out infinite;
+      background: #fff;
+      padding: 4px;
+    }
+    .session-card.celebrating::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: linear-gradient(
+        var(--angle, 0deg),
+        var(--blue), var(--green), var(--orange),
+        var(--pink), var(--purple), var(--red), var(--blue)
+      );
+      animation: rainbowBorder 2s linear infinite;
+      z-index: 0;
+    }
+    .session-card.celebrating > * { position: relative; z-index: 1; }
+
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+    @keyframes rainbowBorder {
+      to { --angle: 360deg; }
+    }
+    @keyframes celebrationGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(41,171,226,0.6),  0 8px 32px rgba(0,0,0,0.5); transform: scale(1); }
+      25%       { box-shadow: 0 0 28px rgba(236,0,140,0.6),  0 8px 32px rgba(0,0,0,0.5); transform: scale(1.01); }
+      50%       { box-shadow: 0 0 28px rgba(141,198,63,0.7), 0 8px 32px rgba(0,0,0,0.5); transform: scale(1); }
+      75%       { box-shadow: 0 0 28px rgba(247,148,29,0.6), 0 8px 32px rgba(0,0,0,0.5); transform: scale(1.01); }
+    }
+
+    /* ── Card Header ─────────────────────────────────────────────── */
+    .card-header {
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 12px 12px 0 0;
+    }
+    .card-header.status-shopping  { background: linear-gradient(135deg, #29ABE2, #1a7eb0); }
+    .card-header.status-analyzing { background: linear-gradient(135deg, #F7941D, #d4650a); }
+    .card-header.status-done      { background: linear-gradient(135deg, #8DC63F, #5a9e2f); }
+    .card-header.status-default   { background: linear-gradient(135deg, #414042, #2a2a2a); }
+
+    .card-name {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 65%;
+    }
+
+    .status-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.25);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.4);
+      white-space: nowrap;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Card Body ───────────────────────────────────────────────── */
+    .card-body {
+      flex: 1;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #fff;
+      border-radius: 0 0 12px 12px;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .progress-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #555;
+    }
+    .progress-track {
+      height: 10px;
+      background: #eee;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.5s ease, background 0.5s ease;
+    }
+    .progress-fill.level-low  { background: linear-gradient(90deg, var(--orange), #ffb347); }
+    .progress-fill.level-mid  { background: linear-gradient(90deg, var(--yellow), #a8c600); }
+    .progress-fill.level-full { background: linear-gradient(90deg, var(--green), #5aae2a); }
+
+    /* Nutrient icons */
+    .nutrient-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .nutrient-icon {
+      font-size: 1.4rem;
+      transition: opacity 0.3s, transform 0.3s;
+      cursor: default;
+      position: relative;
+    }
+    .nutrient-icon.active  { opacity: 1; transform: scale(1.1); }
+    .nutrient-icon.inactive { opacity: 0.2; filter: grayscale(0.6); }
+    .nutrient-icon .tooltip {
+      position: absolute;
+      bottom: 110%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 3px 7px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .nutrient-icon:hover .tooltip { opacity: 1; }
+
+    /* Items list */
+    .items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .items-list::-webkit-scrollbar { width: 4px; }
+    .items-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+    .item-row {
+      font-size: 0.82rem;
+      color: #444;
+      padding: 2px 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-emoji { font-size: 1rem; }
+    .item-name  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .more-items {
+      font-size: 0.75rem;
+      color: #999;
+      text-align: center;
+      padding-top: 3px;
+    }
+
+    /* ── Celebration overlay ──────────────────────────────────────── */
+    .celebration-content {
+      padding: 10px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(180deg, rgba(141,198,63,0.08), rgba(41,171,226,0.06));
+      border-radius: 0 0 12px 12px;
+    }
+
+    .ai-title {
+      font-size: 1.3rem;
+      font-weight: 900;
+      text-align: center;
+      animation: rainbowText 3s linear infinite;
+      letter-spacing: 0.5px;
+    }
+    @keyframes rainbowText {
+      0%   { color: var(--blue);   }
+      17%  { color: var(--green);  }
+      33%  { color: var(--orange); }
+      50%  { color: var(--pink);   }
+      67%  { color: var(--purple); }
+      83%  { color: var(--red);    }
+      100% { color: var(--blue);   }
+    }
+
+    .star-row {
+      font-size: 1.3rem;
+      letter-spacing: 3px;
+      animation: starSpin 2.5s ease-in-out infinite;
+    }
+    @keyframes starSpin {
+      0%, 100% { transform: rotate(-4deg); }
+      50%       { transform: rotate(4deg);  }
+    }
+
+    /* ── Particles (celebration) ─────────────────────────────────── */
+    .particle-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      border-radius: 16px;
+      z-index: 5;
+    }
+    .particle {
+      position: absolute;
+      top: -10px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: fall 2.5s linear infinite;
+    }
+    @keyframes fall {
+      0%   { transform: translateY(0) rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(300px) rotate(720deg); opacity: 0; }
+    }
+
+    /* ── Responsive tweaks ──────────────────────────────────────── */
+    @media (max-width: 600px) {
+      #title { font-size: 1rem; }
+      #header { padding: 0 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <div id="header">
+    <div id="logo-area">
+      <img src="technoda.png" alt="Technoda" />
+    </div>
+
+    <div id="title">🔬 סופר-מדע | לוח חי</div>
+
+    <div id="right-panel">
+      <div id="connection-badge" class="disconnected">🔴 אין חיבור</div>
+      <div id="clock">שעה: 00:00:00</div>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div id="grid-wrapper">
+    <div id="cards-grid"></div>
+    <div id="empty-state">
+      <div id="empty-emoji">🛒</div>
+      <div id="empty-text">ממתין למבקרים...</div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  /* ═══════════════════════════════════════════════════════════════
+     Firebase init
+  ═══════════════════════════════════════════════════════════════ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDNy5LNznYZv-8zDjjqoOhOMNDzHmVaVnc",
+    authDomain: "market-ddfe6.firebaseapp.com",
+    projectId: "market-ddfe6",
+    storageBucket: "market-ddfe6.firebasestorage.app",
+    messagingSenderId: "206448884373",
+    appId: "1:206448884373:web:5193af078826df8e15f99c",
+    databaseURL: "https://market-ddfe6-default-rtdb.europe-west1.firebasedatabase.app/"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  /* ═══════════════════════════════════════════════════════════════
+     Connection state
+  ═══════════════════════════════════════════════════════════════ */
+  const badge = document.getElementById('connection-badge');
+  db.ref('.info/connected').on('value', snap => {
+    const connected = snap.val() === true;
+    badge.textContent  = connected ? '🟢 מחובר' : '🔴 אין חיבור';
+    badge.className    = 'connection-badge ' + (connected ? 'connected' : 'disconnected');
+    // re-attach to id as well (id-based styling kept above)
+    badge.id           = 'connection-badge';
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     Clock
+  ═══════════════════════════════════════════════════════════════ */
+  function updateClock() {
+    const now = new Date();
+    const hh  = String(now.getHours()).padStart(2, '0');
+    const mm  = String(now.getMinutes()).padStart(2, '0');
+    const ss  = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('clock').textContent = `שעה: ${hh}:${mm}:${ss}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* ═══════════════════════════════════════════════════════════════
+     Celebration tracker  { sessionId → timestamp first seen done }
+  ═══════════════════════════════════════════════════════════════ */
+  const celebrationStart = {};   // sessionId → Date.now()
+  const CELEBRATION_MS   = 60_000;
+
+  /* ═══════════════════════════════════════════════════════════════
+     Helpers
+  ═══════════════════════════════════════════════════════════════ */
+  const ITEM_LIMIT = 10;
+
+  const statusLabel = { shopping: '🛍️ קונה', analyzing: '🔬 מנתח', done: '✅ סיים' };
+  const statusClass = { shopping: 'status-shopping', analyzing: 'status-analyzing', done: 'status-done' };
+
+  function nutrientActive(items, key) {
+    if (!items || !items.length) return false;
+    return items.some(item => item && Number(item[key]) > 0);
+  }
+
+  function progressInfo(count) {
+    const total = 10;
+    const pct   = Math.min(count / total, 1) * 100;
+    if (count >= total) return { pct, cls: 'level-full', label: '🌟 הסל מלא!' };
+    if (count >= 7)     return { pct, cls: 'level-mid',  label: '⚡ כמעט מוכן!' };
+    return { pct, cls: 'level-low', label: `${count} מוצרים` };
+  }
+
+  function starsFromRating(rating) {
+    const r = Math.round(Number(rating) || 0);
+    return '⭐'.repeat(Math.max(0, Math.min(r, 5)));
+  }
+
+  function isCelebrating(sessionId) {
+    if (!celebrationStart[sessionId]) return false;
+    return (Date.now() - celebrationStart[sessionId]) < CELEBRATION_MS;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Particle helper (confetti on celebrating cards)
+  ═══════════════════════════════════════════════════════════════ */
+  const PARTICLE_COLORS = ['#29ABE2','#8DC63F','#F7941D','#EC008C','#662D91','#BE1E2D','#f0d000'];
+  function buildParticles() {
+    const container = document.createElement('div');
+    container.className = 'particle-container';
+    for (let i = 0; i < 14; i++) {
+      const p       = document.createElement('div');
+      p.className   = 'particle';
+      p.style.left  = `${Math.random() * 100}%`;
+      p.style.background = PARTICLE_COLORS[i % PARTICLE_COLORS.length];
+      p.style.animationDelay    = `${(Math.random() * 2.5).toFixed(2)}s`;
+      p.style.animationDuration = `${(1.8 + Math.random() * 1.5).toFixed(2)}s`;
+      p.style.width  = `${5 + Math.floor(Math.random() * 6)}px`;
+      p.style.height = p.style.width;
+      container.appendChild(p);
+    }
+    return container;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Build one card element
+  ═══════════════════════════════════════════════════════════════ */
+  function buildCard(sessionId, session) {
+    const items     = session.items   ? Object.values(session.items) : [];
+    const status    = session.status  || 'shopping';
+    const name      = session.childName || session.name || 'מבקר';
+    const aiTitle   = session.aiTitle   || '';
+    const starRating = session.starRating != null ? session.starRating : null;
+    const celebrating = (status === 'done') && isCelebrating(sessionId);
+
+    const card = document.createElement('div');
+    card.className   = 'session-card' + (celebrating ? ' celebrating' : '');
+    card.dataset.sid = sessionId;
+
+    /* ── particles ── */
+    if (celebrating) {
+      card.appendChild(buildParticles());
+    }
+
+    /* ── header ── */
+    const header = document.createElement('div');
+    header.className = 'card-header ' + (statusClass[status] || 'status-default');
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'card-name';
+    nameEl.textContent = name;
+
+    const badgeEl = document.createElement('div');
+    badgeEl.className = 'status-badge';
+    badgeEl.textContent = statusLabel[status] || status;
+
+    header.appendChild(nameEl);
+    header.appendChild(badgeEl);
+    card.appendChild(header);
+
+    /* ── body ── */
+    const body = document.createElement('div');
+    body.className = (celebrating && aiTitle) ? 'celebration-content' : 'card-body';
+
+    if (celebrating && aiTitle) {
+      /* ── Celebration view ── */
+      const titleEl = document.createElement('div');
+      titleEl.className   = 'ai-title';
+      titleEl.textContent = aiTitle;
+      body.appendChild(titleEl);
+
+      if (starRating != null) {
+        const stars = document.createElement('div');
+        stars.className   = 'star-row';
+        stars.textContent = starsFromRating(starRating);
+        body.appendChild(stars);
+      }
+
+      /* also show compact nutrient + item count below title */
+      body.appendChild(buildProgressSection(items));
+      body.appendChild(buildNutrientRow(items));
+
+    } else {
+      /* ── Normal view ── */
+      body.appendChild(buildProgressSection(items));
+      body.appendChild(buildNutrientRow(items));
+      body.appendChild(buildItemsList(items));
+
+      if (status === 'done' && aiTitle) {
+        /* done but celebration expired – show title quietly */
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-size:0.9rem;font-weight:800;color:#662D91;text-align:center;margin-top:4px;';
+        titleEl.textContent = aiTitle;
+        body.appendChild(titleEl);
+      }
+    }
+
+    card.appendChild(body);
+    return card;
+  }
+
+  function buildProgressSection(items) {
+    const count = items.length;
+    const info  = progressInfo(count);
+
+    const wrap  = document.createElement('div');
+    wrap.className = 'progress-wrap';
+
+    const label = document.createElement('div');
+    label.className   = 'progress-label';
+    label.textContent = info.label;
+
+    const track = document.createElement('div');
+    track.className = 'progress-track';
+
+    const fill  = document.createElement('div');
+    fill.className = 'progress-fill ' + info.cls;
+    fill.style.width = info.pct + '%';
+
+    track.appendChild(fill);
+    wrap.appendChild(label);
+    wrap.appendChild(track);
+    return wrap;
+  }
+
+  function buildNutrientRow(items) {
+    const row = document.createElement('div');
+    row.className = 'nutrient-row';
+
+    const nutrients = [
+      { key: 'carbs',    emoji: '🌾', label: 'פחמימות' },
+      { key: 'protein',  emoji: '💪', label: 'חלבון' },
+      { key: 'fat',      emoji: '🥑', label: 'שומן' },
+      { key: 'vitamins', emoji: '🍊', label: 'ויטמינים' },
+    ];
+
+    nutrients.forEach(n => {
+      const active  = nutrientActive(items, n.key);
+      const icon    = document.createElement('span');
+      icon.className = 'nutrient-icon ' + (active ? 'active' : 'inactive');
+
+      const em = document.createElement('span');
+      em.textContent = n.emoji;
+
+      const tip = document.createElement('span');
+      tip.className   = 'tooltip';
+      tip.textContent = n.label;
+
+      icon.appendChild(em);
+      icon.appendChild(tip);
+      row.appendChild(icon);
+    });
+
+    return row;
+  }
+
+  function buildItemsList(items) {
+    const wrap = document.createElement('div');
+    wrap.className = 'items-list';
+
+    const visible = items.slice(0, ITEM_LIMIT);
+    visible.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+
+      const emojiEl = document.createElement('span');
+      emojiEl.className   = 'item-emoji';
+      emojiEl.textContent = item.emoji || '🛒';
+
+      const nameEl = document.createElement('span');
+      nameEl.className   = 'item-name';
+      nameEl.textContent = item.name || item.productName || '';
+
+      row.appendChild(emojiEl);
+      row.appendChild(nameEl);
+      wrap.appendChild(row);
+    });
+
+    if (items.length > ITEM_LIMIT) {
+      const more = document.createElement('div');
+      more.className   = 'more-items';
+      more.textContent = `+ עוד ${items.length - ITEM_LIMIT} מוצרים`;
+      wrap.appendChild(more);
+    }
+
+    return wrap;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Re-render all cards
+  ═══════════════════════════════════════════════════════════════ */
+  const grid       = document.getElementById('cards-grid');
+  const emptyState = document.getElementById('empty-state');
+
+  // Track previously-known session IDs for slide-in detection
+  let knownIds = new Set();
+  // Track which sessions were 'done' before so we can detect transition
+  let prevStatus = {};
+
+  function renderSessions(sessions) {
+    const now       = Date.now();
+    const fourHours = 4 * 60 * 60 * 1000;
+
+    /* filter: active only (created in last 4 hours) */
+    const active = Object.entries(sessions).filter(([id, s]) => {
+      const created = s.createdAt || s.startTime || s.timestamp || 0;
+      return (now - created) < fourHours;
+    });
+
+    /* detect new "done" transitions → start celebration */
+    active.forEach(([id, s]) => {
+      if (s.status === 'done' && prevStatus[id] !== 'done') {
+        celebrationStart[id] = now;
+      }
+      prevStatus[id] = s.status;
+    });
+
+    /* detect new sessions */
+    const currentIds = new Set(active.map(([id]) => id));
+
+    if (active.length === 0) {
+      grid.innerHTML = '';
+      emptyState.classList.add('visible');
+      knownIds = currentIds;
+      return;
+    }
+
+    emptyState.classList.remove('visible');
+
+    /* build map of existing DOM cards */
+    const existingCards = {};
+    grid.querySelectorAll('.session-card').forEach(el => {
+      existingCards[el.dataset.sid] = el;
+    });
+
+    /* remove gone sessions */
+    Object.keys(existingCards).forEach(id => {
+      if (!currentIds.has(id)) existingCards[id].remove();
+    });
+
+    /* upsert each session */
+    active.forEach(([id, s], idx) => {
+      const newCard = buildCard(id, s);
+      const existing = grid.querySelector(`.session-card[data-sid="${id}"]`);
+      if (existing) {
+        /* replace in-place to preserve grid order */
+        grid.replaceChild(newCard, existing);
+        /* suppress animation for existing cards (don't replay slideIn) */
+        if (knownIds.has(id)) {
+          newCard.style.animation = 'none';
+        }
+      } else {
+        /* append new card – slideIn animation plays naturally */
+        grid.appendChild(newCard);
+      }
+    });
+
+    /* Re-order DOM to match sorted order (by creation time) */
+    active
+      .sort(([,a],[,b]) => (a.createdAt || 0) - (b.createdAt || 0))
+      .forEach(([id]) => {
+        const el = grid.querySelector(`.session-card[data-sid="${id}"]`);
+        if (el) grid.appendChild(el); // moves to end preserving order
+      });
+
+    knownIds = currentIds;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Firebase listener
+  ═══════════════════════════════════════════════════════════════ */
+  db.ref('sessions').on('value', snap => {
+    const sessions = snap.val() || {};
+    renderSessions(sessions);
+  });
+
+  /* Re-render every 5 seconds to flip celebration → normal after 60s */
+  setInterval(() => {
+    db.ref('sessions').once('value', snap => {
+      const sessions = snap.val() || {};
+      renderSessions(sessions);
+    });
+  }, 5000);
+
+</script>
+</body>
+</html>

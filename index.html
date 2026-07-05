@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>סופר-מדע | טכנודה</title>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --charcoal: #414042;
+      --blue:     #29ABE2;
+      --green:    #8DC63F;
+      --purple:   #662D91;
+      --orange:   #F7941D;
+      --pink:     #EC008C;
+      --red:      #BE1E2D;
+      --yellow:   #F5D000;
+      --bg-dark:  #2a2a2c;
+      --card-bg:  #ffffff;
+      --radius:   16px;
+      --shadow:   0 4px 20px rgba(0,0,0,0.12);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Rubik', 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: var(--charcoal);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+      background: #f0f2f5;
+    }
+
+    /* ─── Screen System ────────────────────────────────────── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100%;
+    }
+    .screen.active { display: flex; }
+
+    /* ─── Toast ────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      z-index: 9999;
+      background: var(--charcoal);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      max-width: 90vw;
+      text-align: center;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+      transition: transform 0.35s cubic-bezier(.34,1.56,.64,1);
+      pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.error   { background: var(--red); }
+    #toast.success { background: var(--green); }
+
+    /* ─── Animations ───────────────────────────────────────── */
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.12); }
+    }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40%           { transform: translateY(-10px); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       SCREEN 1 — LOGIN
+    ═══════════════════════════════════════════════════════ */
+    #screen-login {
+      background: linear-gradient(160deg, #2a2a2c 0%, #414042 50%, #1a1a1c 100%);
+      align-items: center;
+      justify-content: center;
+      padding: 40px 28px;
+      gap: 0;
+    }
+
+    .login-logo {
+      width: 160px;
+      filter: brightness(0) invert(1);
+      margin-bottom: 28px;
+      animation: fadeIn 0.6s ease both;
+    }
+
+    .login-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 10px;
+      animation: fadeIn 0.6s 0.1s ease both;
+    }
+    .login-title span { color: var(--blue); }
+
+    .login-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.65);
+      text-align: center;
+      line-height: 1.6;
+      margin-bottom: 40px;
+      animation: fadeIn 0.6s 0.2s ease both;
+    }
+
+    .login-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      width: 100%;
+      animation: fadeIn 0.6s 0.3s ease both;
+    }
+
+    .login-label {
+      display: block;
+      color: rgba(255,255,255,0.8);
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .login-input {
+      width: 100%;
+      padding: 16px 18px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      font-size: 18px;
+      font-family: inherit;
+      text-align: right;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 20px;
+    }
+    .login-input::placeholder { color: rgba(255,255,255,0.35); }
+    .login-input:focus {
+      border-color: var(--blue);
+      background: rgba(255,255,255,0.16);
+    }
+
+    .btn-start {
+      width: 100%;
+      padding: 18px;
+      border-radius: 50px;
+      border: none;
+      background: linear-gradient(135deg, var(--blue), #1a8fc0);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 6px 24px rgba(41,171,226,0.45);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-start:active {
+      transform: scale(0.97);
+      box-shadow: 0 3px 12px rgba(41,171,226,0.35);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       SCREEN 2 — CART
+    ═══════════════════════════════════════════════════════ */
+    #screen-cart {
+      background: #f0f2f5;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .cart-header {
+      background: linear-gradient(135deg, #2a2a2c, #414042);
+      padding: 16px 20px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+    .cart-header-logo {
+      width: 44px;
+      filter: brightness(0) invert(1);
+      flex-shrink: 0;
+    }
+    .cart-header-text { flex: 1; }
+    .cart-header-greeting {
+      color: rgba(255,255,255,0.65);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .cart-header-name {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    /* Scrollable content */
+    .cart-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Progress card */
+    .progress-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .progress-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--charcoal);
+    }
+    .progress-count {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--blue);
+    }
+    .progress-track {
+      background: #e8eaed;
+      border-radius: 50px;
+      height: 12px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 50px;
+      background: var(--orange);
+      transition: width 0.5s cubic-bezier(.34,1.56,.64,1), background 0.4s;
+    }
+    .progress-fill.yellow { background: var(--yellow); }
+    .progress-fill.green  { background: var(--green); }
+    .progress-text {
+      font-size: 13px;
+      color: #666;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    /* Nutrient badges */
+    .nutrients-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .nutrients-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--charcoal);
+      margin-bottom: 12px;
+    }
+    .nutrients-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .nutrient-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 6px;
+      border-radius: 12px;
+      background: #f5f7fa;
+      opacity: 0.3;
+      transition: opacity 0.3s, transform 0.3s, background 0.3s;
+    }
+    .nutrient-badge.active {
+      opacity: 1;
+      transform: scale(1.05);
+      background: #eef9ff;
+    }
+    .nutrient-badge .nb-emoji { font-size: 22px; }
+    .nutrient-badge .nb-label { font-size: 10px; font-weight: 700; color: var(--charcoal); text-align: center; }
+
+    /* Items */
+    .items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: #aaa;
+    }
+    .empty-state .empty-icon { font-size: 64px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; font-weight: 500; }
+
+    .item-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow);
+      border: 2px solid transparent;
+      animation: slideIn 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .item-card.newest { border-color: var(--blue); }
+
+    .newest-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 50px;
+    }
+
+    .item-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-emoji { font-size: 32px; flex-shrink: 0; }
+    .item-info { flex: 1; min-width: 0; }
+    .item-name { font-size: 15px; font-weight: 700; color: var(--charcoal); margin-bottom: 4px; }
+    .item-nutrients { font-size: 11px; color: #888; font-weight: 500; }
+    .item-delete {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: #f5f5f5;
+      color: #999;
+      font-size: 14px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .item-delete:active { background: #ffe0e0; color: var(--red); }
+
+    .item-fact {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #eef9ff, #e0f4fb);
+      border-right: 3px solid var(--blue);
+      font-size: 12px;
+      color: var(--charcoal);
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    /* Sticky action bar */
+    .cart-actions {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 14px 16px 20px;
+      display: flex;
+      gap: 10px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+      border-top: 1px solid #e8eaed;
+      z-index: 100;
+    }
+    .btn-scan {
+      flex: 1;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      background: var(--blue);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 14px rgba(41,171,226,0.4);
+    }
+    .btn-scan:active { transform: scale(0.97); }
+
+    .btn-finish {
+      flex: 1;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      background: var(--green);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+      box-shadow: 0 4px 14px rgba(141,198,63,0.4);
+    }
+    .btn-finish:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-finish:not(:disabled):active { transform: scale(0.97); }
+    .btn-finish.locked { display: none; }
+
+    /* ═══════════════════════════════════════════════════════
+       SCREEN 3 — SCANNER
+    ═══════════════════════════════════════════════════════ */
+    #screen-scanner {
+      background: #111;
+      flex-direction: column;
+    }
+
+    .scanner-header {
+      background: rgba(0,0,0,0.85);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .btn-back {
+      background: rgba(255,255,255,0.12);
+      border: none;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s;
+      direction: ltr;
+    }
+    .btn-back:active { background: rgba(255,255,255,0.2); }
+    .scanner-title {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      flex: 1;
+      text-align: center;
+    }
+
+    .scanner-view {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #qr-reader {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0;
+    }
+
+    /* Override html5-qrcode default styles */
+    #qr-reader > * { border: none !important; }
+    #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+    #qr-reader img { display: none !important; }
+    #qr-reader__scan_region { border: none !important; background: transparent !important; }
+    #qr-reader__dashboard { display: none !important; }
+
+    .scanner-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .scanner-box {
+      width: 250px;
+      height: 250px;
+      position: relative;
+    }
+    .scanner-box::before, .scanner-box::after,
+    .scanner-box .corner-br, .scanner-box .corner-tl {
+      content: '';
+      position: absolute;
+      width: 32px; height: 32px;
+      border-color: var(--blue);
+      border-style: solid;
+    }
+    .scanner-box::before { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+    .scanner-box::after  { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
+    .scanner-box .corner-br { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+    .scanner-box .corner-tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+
+    .scanner-line {
+      position: absolute;
+      left: 6px; right: 6px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--blue), transparent);
+      border-radius: 2px;
+      animation: scanLine 2s ease-in-out infinite;
+    }
+    @keyframes scanLine {
+      0%   { top: 6px; opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { top: calc(100% - 8px); opacity: 0; }
+    }
+
+    .scanner-hint {
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      text-align: center;
+      padding: 18px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       SCREEN 4 — ANALYZING
+    ═══════════════════════════════════════════════════════ */
+    #screen-analyzing {
+      background: linear-gradient(160deg, #1a1a2e, #16213e, #0f3460);
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 40px 28px;
+    }
+
+    .analyzing-robot {
+      font-size: 96px;
+      animation: pulse 1.6s ease-in-out infinite;
+      filter: drop-shadow(0 0 24px rgba(41,171,226,0.6));
+    }
+
+    .analyzing-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+    }
+
+    .analyzing-subtitle {
+      font-size: 15px;
+      color: rgba(255,255,255,0.6);
+      text-align: center;
+    }
+
+    .dots-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+    .dot:nth-child(1) { animation: bounce 1.2s 0.0s ease-in-out infinite; }
+    .dot:nth-child(2) { animation: bounce 1.2s 0.2s ease-in-out infinite; }
+    .dot:nth-child(3) { animation: bounce 1.2s 0.4s ease-in-out infinite; }
+
+    /* ═══════════════════════════════════════════════════════
+       SCREEN 5 — REPORT
+    ═══════════════════════════════════════════════════════ */
+    #screen-report {
+      background: #f0f2f5;
+      flex-direction: column;
+    }
+
+    .report-header {
+      background: linear-gradient(135deg, #1a1a2e, #414042);
+      padding: 24px 20px 28px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .report-child-name {
+      color: rgba(255,255,255,0.65);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .report-ai-title {
+      color: var(--blue);
+      font-size: 26px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    .report-stars {
+      font-size: 28px;
+      letter-spacing: 4px;
+    }
+
+    .report-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .report-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      animation: fadeIn 0.5s ease;
+    }
+    .report-card-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--charcoal);
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f2f5;
+    }
+    .report-text {
+      font-size: 15px;
+      color: #444;
+      line-height: 1.75;
+      white-space: pre-wrap;
+    }
+
+    .product-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .product-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f0f2f5;
+      border-radius: 50px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+
+    .email-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--charcoal);
+      margin-bottom: 10px;
+      display: block;
+    }
+    .email-input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 2px solid #e0e0e0;
+      font-size: 16px;
+      font-family: inherit;
+      text-align: left;
+      direction: ltr;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 12px;
+      color: var(--charcoal);
+    }
+    .email-input:focus { border-color: var(--purple); }
+    .btn-send {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      background: var(--purple);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(102,45,145,0.4);
+      transition: transform 0.15s, opacity 0.2s;
+    }
+    .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-send:not(:disabled):active { transform: scale(0.97); }
+    .email-success {
+      display: none;
+      text-align: center;
+      color: var(--green);
+      font-size: 15px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    .email-success.show { display: block; }
+
+    /* ─── Utility ───────────────────────────────────────── */
+    .mt-4 { margin-top: 4px; }
+    .text-center { text-align: center; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════════════════════════════════
+       SCREEN 1: LOGIN
+  ══════════════════════════════════════ -->
+  <div id="screen-login" class="screen active">
+    <img src="technoda.png" alt="טכנודה" class="login-logo" />
+    <h1 class="login-title">ברוך הבא לסופר-מדע!<br><span>🔬</span></h1>
+    <p class="login-subtitle">הרכב ארוחה, סרוק מוצרים,<br>וגלה מה ה-AI אומר!</p>
+    <div class="login-card">
+      <label class="login-label" for="name-input">מה השם שלך?</label>
+      <input
+        id="name-input"
+        class="login-input"
+        type="text"
+        placeholder="הכנס את שמך כאן..."
+        autocomplete="off"
+        maxlength="30"
+      />
+      <button class="btn-start" onclick="startSession()">🛒 בואו נתחיל!</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 2: CART
+  ══════════════════════════════════════ -->
+  <div id="screen-cart" class="screen">
+    <div class="cart-header">
+      <img src="technoda.png" alt="טכנודה" class="cart-header-logo" />
+      <div class="cart-header-text">
+        <div class="cart-header-greeting">שלום 👋</div>
+        <div class="cart-header-name" id="cart-header-name">—</div>
+      </div>
+    </div>
+
+    <div class="cart-body">
+      <!-- Progress -->
+      <div class="progress-card">
+        <div class="progress-header">
+          <span class="progress-title">🛒 מוצרים בסל</span>
+          <span class="progress-count"><span id="progress-num">0</span>/10</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+        <p class="progress-text" id="progress-text">סרוק את המוצר הראשון שלך!</p>
+      </div>
+
+      <!-- Nutrient badges -->
+      <div class="nutrients-card">
+        <div class="nutrients-title">🍽️ קבוצות מזון שגילית</div>
+        <div class="nutrients-row">
+          <div class="nutrient-badge" id="badge-carbs">
+            <span class="nb-emoji">🌾</span>
+            <span class="nb-label">פחמימות</span>
+          </div>
+          <div class="nutrient-badge" id="badge-protein">
+            <span class="nb-emoji">💪</span>
+            <span class="nb-label">חלבונים</span>
+          </div>
+          <div class="nutrient-badge" id="badge-fat">
+            <span class="nb-emoji">🥑</span>
+            <span class="nb-label">שומנים</span>
+          </div>
+          <div class="nutrient-badge" id="badge-vitamins">
+            <span class="nb-emoji">🍊</span>
+            <span class="nb-label">ויטמינים</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items list -->
+      <div class="items-list" id="items-list">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">🛒</div>
+          <p>הסל שלך ריק...<br>סרוק מוצר כדי להתחיל!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky action bar -->
+    <div class="cart-actions">
+      <button class="btn-scan" id="btn-scan" onclick="openScanner()">📷 סרוק מוצר</button>
+      <button class="btn-finish" id="btn-finish" onclick="finishShopping()" disabled>🤖 שלח לניתוח AI</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 3: SCANNER
+  ══════════════════════════════════════ -->
+  <div id="screen-scanner" class="screen">
+    <div class="scanner-header">
+      <button class="btn-back" onclick="closeScanner()">← חזור</button>
+      <div class="scanner-title">סרוק קוד QR של מוצר</div>
+      <div style="width:72px"></div>
+    </div>
+    <div class="scanner-view">
+      <div id="qr-reader"></div>
+      <div class="scanner-overlay">
+        <div class="scanner-box">
+          <div class="corner-br"></div>
+          <div class="corner-tl"></div>
+          <div class="scanner-line"></div>
+        </div>
+      </div>
+    </div>
+    <div class="scanner-hint">כוון את המצלמה לקוד ה-QR שעל המוצר</div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 4: ANALYZING
+  ══════════════════════════════════════ -->
+  <div id="screen-analyzing" class="screen">
+    <div class="analyzing-robot">🤖</div>
+    <h2 class="analyzing-title">הרובוט מנתח את הסל שלך...</h2>
+    <p class="analyzing-subtitle">הבינה המלאכותית עובדת...</p>
+    <div class="dots-row">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 5: REPORT
+  ══════════════════════════════════════ -->
+  <div id="screen-report" class="screen">
+    <div class="report-header">
+      <div class="report-child-name" id="report-child-name"></div>
+      <div class="report-ai-title" id="report-ai-title">גיבור המדע</div>
+      <div class="report-stars" id="report-stars">⭐⭐⭐</div>
+    </div>
+
+    <div class="report-body">
+      <!-- AI analysis card -->
+      <div class="report-card">
+        <div class="report-card-title">📊 ניתוח תזונתי</div>
+        <div class="report-text" id="report-text"></div>
+      </div>
+
+      <!-- Products in cart -->
+      <div class="report-card">
+        <div class="report-card-title">🛒 מה היה בסל</div>
+        <div class="product-chips" id="report-products"></div>
+      </div>
+
+      <!-- Email section -->
+      <div class="report-card">
+        <div class="report-card-title">📧 שלח את הדו"ח למייל</div>
+        <label class="email-label" for="email-input">כתובת המייל:</label>
+        <input
+          id="email-input"
+          class="email-input"
+          type="email"
+          placeholder="example@email.com"
+          autocomplete="email"
+        />
+        <button class="btn-send" id="btn-send" onclick="sendEmail()">✉️ שלח את הדו"ח</button>
+        <div class="email-success" id="email-success">✅ נשלח בהצלחה!</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDNy5LNznYZv-8zDjjqoOhOMNDzHmVaVnc",
+  authDomain: "market-ddfe6.firebaseapp.com",
+  projectId: "market-ddfe6",
+  storageBucket: "market-ddfe6.firebasestorage.app",
+  messagingSenderId: "206448884373",
+  appId: "1:206448884373:web:5193af078826df8e15f99c",
+  databaseURL: "https://market-ddfe6-default-rtdb.europe-west1.firebasedatabase.app/"
+};
+const GEMINI_API_KEY  = "AQ.Ab8RN6KRfiO5i8_j1ynswhJzYyCa4vEu-FvnWgWdFo6upysdJA";
+const GEMINI_MODEL    = "gemini-1.5-flash";
+const EMAILJS_SERVICE = "service_7j1s4pl";
+const EMAILJS_TEMPLATE= "template_4jpm77j";
+const EMAILJS_PUBLIC_KEY = "Y0yqKFQQ4ONQ4j396";
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
+let db;
+let sessionId   = null;
+let sessionName = "";
+let cartItems   = [];  // [{ barcode, name, emoji, carbs, protein, fat, vitamins, aiFact }]
+let qrScanner   = null;
+let scannerActive = false;
+let reportData  = null;
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════ */
+window.onload = function () {
+  // Init Firebase
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+
+  // Init EmailJS
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+
+  // Enter key on name input
+  document.getElementById('name-input').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') startSession();
+  });
+
+  // Restore session from localStorage
+  const savedId   = localStorage.getItem('sessionId');
+  const savedName = localStorage.getItem('sessionName');
+  if (savedId && savedName) {
+    sessionId   = savedId;
+    sessionName = savedName;
+    db.ref('sessions/' + sessionId).get().then(snap => {
+      if (snap.exists()) {
+        const session = snap.val();
+        if (session.status === 'shopping') {
+          cartItems = session.items ? Object.values(session.items) : [];
+          showScreen('screen-cart');
+          updateCart();
+        } else if (session.status === 'done' && session.aiReport) {
+          cartItems = session.items ? Object.values(session.items) : [];
+          reportData = {
+            title:  session.aiTitle  || 'גיבור המדע',
+            score:  session.aiScore  || '⭐⭐⭐',
+            report: session.aiReport
+          };
+          showReport();
+        } else {
+          clearSession();
+        }
+      } else {
+        clearSession();
+      }
+    }).catch(() => clearSession());
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   SCREEN MANAGEMENT
+══════════════════════════════════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ══════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════ */
+let toastTimer = null;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ══════════════════════════════════════════════════════════
+   SESSION
+══════════════════════════════════════════════════════════ */
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+async function startSession() {
+  const nameInput = document.getElementById('name-input');
+  const name = nameInput.value.trim();
+  if (!name) {
+    nameInput.focus();
+    showToast('❗ אנא הכנס את שמך', 'error');
+    return;
+  }
+
+  sessionId   = generateId();
+  sessionName = name;
+  cartItems   = [];
+
+  localStorage.setItem('sessionId',   sessionId);
+  localStorage.setItem('sessionName', sessionName);
+
+  await db.ref('sessions/' + sessionId).set({
+    name,
+    status:    'shopping',
+    createdAt: Date.now(),
+    items:     []
+  });
+
+  showScreen('screen-cart');
+  updateCart();
+}
+
+function clearSession() {
+  localStorage.removeItem('sessionId');
+  localStorage.removeItem('sessionName');
+  sessionId   = null;
+  sessionName = "";
+  cartItems   = [];
+  showScreen('screen-login');
+}
+
+/* ══════════════════════════════════════════════════════════
+   CART
+══════════════════════════════════════════════════════════ */
+const MAX_ITEMS = 10;
+const MIN_ITEMS = 7;
+
+function updateCart() {
+  const count = cartItems.length;
+
+  // Header name
+  document.getElementById('cart-header-name').textContent = 'הסל של ' + sessionName;
+
+  // Progress
+  const pct  = Math.min((count / MAX_ITEMS) * 100, 100);
+  const fill  = document.getElementById('progress-fill');
+  const pnum  = document.getElementById('progress-num');
+  const ptext = document.getElementById('progress-text');
+
+  pnum.textContent = count;
+  fill.style.width = pct + '%';
+  fill.classList.remove('yellow', 'green');
+  if (count >= MAX_ITEMS)       fill.classList.add('green');
+  else if (count >= MIN_ITEMS)  fill.classList.add('yellow');
+
+  if (count < MIN_ITEMS) {
+    ptext.textContent = 'חסרים עוד ' + (MIN_ITEMS - count) + ' מוצרים להרכבת ארוחה';
+  } else if (count < MAX_ITEMS) {
+    ptext.textContent = '✅ אפשר לסיים! עוד ' + (MAX_ITEMS - count) + ' מוצרים לסל מושלם';
+  } else {
+    ptext.textContent = '🎉 הגעת למקסימום!';
+  }
+
+  // Nutrient badges
+  const totals = { carbs: 0, protein: 0, fat: 0, vitamins: 0 };
+  cartItems.forEach(item => {
+    totals.carbs    += Number(item.carbs    || 0);
+    totals.protein  += Number(item.protein  || 0);
+    totals.fat      += Number(item.fat      || 0);
+    totals.vitamins += Number(item.vitamins || 0);
+  });
+  document.getElementById('badge-carbs'  ).classList.toggle('active', totals.carbs    > 0);
+  document.getElementById('badge-protein').classList.toggle('active', totals.protein  > 0);
+  document.getElementById('badge-fat'    ).classList.toggle('active', totals.fat      > 0);
+  document.getElementById('badge-vitamins').classList.toggle('active', totals.vitamins > 0);
+
+  // Buttons
+  const btnFinish = document.getElementById('btn-finish');
+  const btnScan   = document.getElementById('btn-scan');
+
+  if (count >= MAX_ITEMS) {
+    // Must finish — hide scan, lock finish (but keep enabled to force action)
+    btnScan.style.display   = 'none';
+    btnFinish.disabled       = false;
+    btnFinish.classList.remove('locked');
+  } else {
+    btnScan.style.display   = '';
+    btnFinish.disabled       = (count < MIN_ITEMS);
+    btnFinish.classList.remove('locked');
+  }
+
+  // Items list
+  const list = document.getElementById('items-list');
+  const emptyState = document.getElementById('empty-state');
+
+  if (count === 0) {
+    list.innerHTML = '';
+    list.appendChild(emptyState);
+    emptyState.style.display = '';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  // Re-render items
+  // Keep empty state element detached while rendering
+  list.innerHTML = '';
+
+  cartItems.forEach((item, idx) => {
+    const isNewest = (idx === 0);
+    const card = document.createElement('div');
+    card.className = 'item-card' + (isNewest ? ' newest' : '');
+    card.dataset.barcode = item.barcode;
+
+    const nutrientParts = [];
+    if (Number(item.carbs)    > 0) nutrientParts.push('🌾 פחמימות');
+    if (Number(item.protein)  > 0) nutrientParts.push('💪 חלבונים');
+    if (Number(item.fat)      > 0) nutrientParts.push('🥑 שומנים');
+    if (Number(item.vitamins) > 0) nutrientParts.push('🍊 ויטמינים');
+    const nutrientStr = nutrientParts.join(' · ') || 'ללא ערכים';
+
+    card.innerHTML = `
+      ${isNewest ? '<span class="newest-badge">✨ נוסף עכשיו</span>' : ''}
+      <div class="item-main">
+        <div class="item-emoji">${renderItemIcon(item, 40)}</div>
+        <div class="item-info">
+          <div class="item-name">${escHtml(item.name)}</div>
+          <div class="item-nutrients">${nutrientStr}</div>
+        </div>
+        <button class="item-delete" onclick="removeItem('${item.barcode}')" aria-label="הסר מוצר">✕</button>
+      </div>
+      ${isNewest && item.aiFact ? `<div class="item-fact">💡 ${escHtml(item.aiFact)}</div>` : ''}
+    `;
+    list.appendChild(card);
+  });
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(str || ''));
+  return d.innerHTML;
+}
+
+function renderItemIcon(item, size) {
+  if (!size) size = 40;
+  if (item && item.image) {
+    return '<img src="' + item.image + '" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;" alt="" />';
+  }
+  return item.emoji || '📦';
+}
+
+async function removeItem(barcode) {
+  cartItems = cartItems.filter(i => i.barcode !== barcode);
+  await saveItemsToFirebase();
+  updateCart();
+}
+
+async function saveItemsToFirebase() {
+  await db.ref('sessions/' + sessionId).update({
+    items:     cartItems,
+    itemCount: cartItems.length
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   SCANNER
+══════════════════════════════════════════════════════════ */
+function openScanner() {
+  if (cartItems.length >= MAX_ITEMS) {
+    showToast('🎉 הסל מלא! שלח לניתוח AI', 'error');
+    return;
+  }
+  showScreen('screen-scanner');
+  startQrScanner();
+}
+
+function startQrScanner() {
+  if (scannerActive) return;
+  scannerActive = true;
+
+  qrScanner = new Html5Qrcode("qr-reader");
+  qrScanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    onScanSuccess,
+    () => {} // suppress errors
+  ).catch(err => {
+    console.warn('Camera error:', err);
+    showToast('❌ לא ניתן לפתוח מצלמה', 'error');
+    closeScanner();
+  });
+}
+
+function stopQrScanner() {
+  if (qrScanner && scannerActive) {
+    scannerActive = false;
+    qrScanner.stop().catch(() => {});
+    qrScanner = null;
+  }
+}
+
+function closeScanner() {
+  stopQrScanner();
+  showScreen('screen-cart');
+}
+
+async function onScanSuccess(decodedText) {
+  stopQrScanner();
+
+  // Check duplicate
+  if (cartItems.some(i => i.barcode === decodedText)) {
+    showToast('❗ המוצר כבר נמצא בסל!', 'error');
+    closeScanner();
+    return;
+  }
+
+  // Fetch from Firebase
+  try {
+    const snap = await db.ref('products/' + decodedText).get();
+    if (!snap.exists()) {
+      showToast('❌ מוצר לא נמצא במערכת', 'error');
+      closeScanner();
+      return;
+    }
+
+    const product = snap.val();
+    const item = {
+      barcode:  decodedText,
+      name:     product.name     || 'מוצר לא ידוע',
+      emoji:    product.emoji    || '📦',
+      image:    product.image    || '',
+      carbs:    product.carbs    || 0,
+      protein:  product.protein  || 0,
+      fat:      product.fat      || 0,
+      vitamins: product.vitamins || 0,
+      aiFact:   product.aiFact   || ''
+    };
+
+    cartItems.unshift(item);
+    await saveItemsToFirebase();
+
+    closeScanner();
+    updateCart();
+    showToast('✅ ' + item.name + ' נוסף לסל!', 'success');
+  } catch (err) {
+    console.error('Scan error:', err);
+    showToast('❌ שגיאה בטעינת המוצר', 'error');
+    closeScanner();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   FINISH / AI ANALYSIS
+══════════════════════════════════════════════════════════ */
+async function finishShopping() {
+  if (cartItems.length < MIN_ITEMS) return;
+
+  showScreen('screen-analyzing');
+
+  // Update Firebase status
+  await db.ref('sessions/' + sessionId).update({ status: 'analyzing' });
+
+  // Fetch AI prompt from Firebase settings
+  let basePrompt = 'אתה מומחה תזונה לילדים. נתח את הסל הבא וספק ניתוח תזונתי קצר, חיובי ועידודי בעברית.';
+  try {
+    const settingsSnap = await db.ref('settings/aiPrompt').get();
+    if (settingsSnap.exists()) {
+      basePrompt = settingsSnap.val();
+    }
+  } catch (_) {}
+
+  // Build products list for prompt
+  const productLines = cartItems.map(item => {
+    const parts = [];
+    if (Number(item.carbs)    > 0) parts.push('פחמימות: ' + item.carbs);
+    if (Number(item.protein)  > 0) parts.push('חלבונים: ' + item.protein);
+    if (Number(item.fat)      > 0) parts.push('שומנים: ' + item.fat);
+    if (Number(item.vitamins) > 0) parts.push('ויטמינים: ' + item.vitamins);
+    const nutriInfo = parts.length ? ' (' + parts.join(', ') + ')' : '';
+    const factLine  = item.aiFact ? ' | עובדה: ' + item.aiFact : '';
+    return '• ' + item.emoji + ' ' + item.name + nutriInfo + factLine;
+  }).join('\n');
+
+  const fullPrompt = `${basePrompt}
+
+הסל מכיל ${cartItems.length} מוצרים:
+${productLines}
+
+ענה אך ורק ב-JSON בפורמט הבא (ללא מרכאות חיצוניות, ללא markdown):
+{
+  "title": "כותרת מגניבה לילד (2-4 מילים)",
+  "score": "דירוג בכוכבות (למשל ⭐⭐⭐⭐)",
+  "report": "ניתוח תזונתי מעמיק, חיובי ועידודי לילד. 3-5 משפטים."
+}`;
+
+  // Call Gemini
+  let result = null;
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: fullPrompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
+        })
+      }
+    );
+    const data = await response.json();
+    const raw  = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Extract JSON from response (strip markdown if present)
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      result = JSON.parse(jsonMatch[0]);
+    }
+  } catch (err) {
+    console.error('Gemini error:', err);
+  }
+
+  // Fallback
+  if (!result || !result.title || !result.report) {
+    result = {
+      title:  'גיבור המדע',
+      score:  '⭐⭐⭐',
+      report: 'בחרת מוצרים מגוונים ומעניינים! הסל שלך מכיל מגוון קבוצות מזון שמספקות אנרגיה ומינרלים חשובים. כל בחירה שלך תורמת לגוף חזק ובריא. כל הכבוד על הרכבת הארוחה!'
+    };
+  }
+
+  reportData = result;
+
+  // Save to Firebase
+  await db.ref('sessions/' + sessionId).update({
+    aiTitle:    result.title,
+    aiScore:    result.score,
+    aiReport:   result.report,
+    status:     'done',
+    finishedAt: Date.now()
+  });
+
+  showReport();
+}
+
+/* ══════════════════════════════════════════════════════════
+   REPORT SCREEN
+══════════════════════════════════════════════════════════ */
+function showReport() {
+  document.getElementById('report-child-name').textContent = 'הדו"ח של ' + sessionName;
+  document.getElementById('report-ai-title').textContent   = reportData.title  || 'גיבור המדע';
+  document.getElementById('report-stars').textContent      = reportData.score  || '⭐⭐⭐';
+  document.getElementById('report-text').textContent       = reportData.report || '';
+
+  // Product chips
+  const chipsEl = document.getElementById('report-products');
+  chipsEl.innerHTML = '';
+  cartItems.forEach(item => {
+    const chip = document.createElement('div');
+    chip.className = 'product-chip';
+    chip.innerHTML = '<span>' + renderItemIcon(item, 20) + '</span><span>' + escHtml(item.name) + '</span>';
+    chipsEl.appendChild(chip);
+  });
+
+  // Reset email section
+  document.getElementById('email-input').value = '';
+  document.getElementById('btn-send').disabled = false;
+  document.getElementById('email-success').classList.remove('show');
+
+  showScreen('screen-report');
+}
+
+/* ══════════════════════════════════════════════════════════
+   EMAIL
+══════════════════════════════════════════════════════════ */
+async function sendEmail() {
+  const emailEl = document.getElementById('email-input');
+  const email   = emailEl.value.trim();
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('❗ אנא הכנס כתובת מייל תקינה', 'error');
+    emailEl.focus();
+    return;
+  }
+
+  const btn = document.getElementById('btn-send');
+  btn.disabled = true;
+  btn.textContent = '⏳ שולח...';
+
+  const productList = cartItems.map(i => i.emoji + ' ' + i.name).join('\n');
+
+  try {
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+      to_email:      email,
+      child_name:    sessionName,
+      ai_title:      reportData?.title  || '',
+      ai_score:      reportData?.score  || '',
+      ai_report:     reportData?.report || '',
+      products_list: productList,
+      date:          new Date().toLocaleDateString('he-IL')
+    });
+
+    document.getElementById('email-success').classList.add('show');
+    showToast('✅ המייל נשלח בהצלחה!', 'success');
+  } catch (err) {
+    console.error('Email error:', err);
+    btn.disabled = false;
+    btn.textContent = '✉️ שלח את הדו"ח';
+    showToast('❌ שגיאה בשליחת המייל', 'error');
+  }
+}
+</script>
+</body>
+</html>
