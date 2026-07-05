@@ -1775,7 +1775,8 @@ async function generateProductSummary(item) {
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 150, temperature: 0.8 }
+          generationConfig: { maxOutputTokens: 300, temperature: 0.8 },
+          thinkingConfig: { thinkingBudget: 0 }
         })
       }
     );
@@ -1907,7 +1908,8 @@ ${productLines}
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
         body: JSON.stringify({
           contents: [{ parts: [{ text: fullPrompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+          thinkingConfig: { thinkingBudget: 0 }
         })
       }
     );
