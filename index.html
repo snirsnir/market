@@ -1831,13 +1831,18 @@ async function onScanSuccess(decodedText) {
     // Generate AI popup text in background (non-blocking)
     generateProductSummary(item).then(function(summary) {
       item.aiSummaryLoading = false;
-      if (summary) item.aiSummary = summary;
-      updateScanPopup(summary);
+      if (summary) {
+        item.aiSummary = summary;
+        updateScanPopup(summary);
+      } else {
+        // AI failed — show aiFact directly as fallback
+        updateScanPopup(item.aiFact || '');
+      }
       saveItemsToFirebase();
       updateCart();
     }).catch(function() {
       item.aiSummaryLoading = false;
-      updateScanPopup('');
+      updateScanPopup(item.aiFact || '');
       updateCart();
     });
   } catch (err) {
