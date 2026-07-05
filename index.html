@@ -1116,7 +1116,7 @@
     <!-- Sticky action bar -->
     <div class="cart-actions">
       <button class="btn-scan" id="btn-scan" onclick="openScanner()">📷 סרוק מוצר</button>
-      <button class="btn-finish" id="btn-finish" onclick="finishShopping()" disabled>🤖 שלח לניתוח AI</button>
+      <button class="btn-finish" id="btn-finish" onclick="finishShopping()" disabled>עוד 7 מוצרים לסיום ⏳</button>
     </div>
   </div>
 
@@ -1552,14 +1552,19 @@ function updateCart() {
   const btnScan   = document.getElementById('btn-scan');
 
   if (count >= MAX_ITEMS) {
-    // Must finish — hide scan, lock finish (but keep enabled to force action)
-    btnScan.style.display   = 'none';
-    btnFinish.disabled       = false;
-    btnFinish.classList.remove('locked');
+    btnScan.style.display = 'none';
+    btnFinish.disabled    = false;
+    btnFinish.textContent = '🤖 שלחו לניתוח AI';
   } else {
-    btnScan.style.display   = '';
-    btnFinish.disabled       = (count < MIN_ITEMS);
-    btnFinish.classList.remove('locked');
+    btnScan.style.display = '';
+    const remaining = MIN_ITEMS - count;
+    if (remaining > 0) {
+      btnFinish.disabled    = true;
+      btnFinish.textContent = 'עוד ' + remaining + ' מוצרים לסיום ⏳';
+    } else {
+      btnFinish.disabled    = false;
+      btnFinish.textContent = '🤖 שלחו לניתוח AI';
+    }
   }
 
   // Items list
