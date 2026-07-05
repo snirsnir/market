@@ -1704,7 +1704,7 @@ function showScanPopup(item) {
 
   // Product icon/image
   if (item.image) {
-    imgEl.innerHTML = '<img src="' + escAttr(item.image) + '" />';
+    imgEl.innerHTML = '<img src="' + escHtml(item.image) + '" />';
   } else {
     imgEl.textContent = item.emoji || '📦';
   }
