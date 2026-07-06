@@ -1,4 +1,4 @@
-/* =====================================================
+﻿/* =====================================================
    CONFIG & INIT
 ===================================================== */
 var firebaseConfig = {
@@ -581,7 +581,7 @@ function generatePrintPage(selectedProducts) {
     html += '<span class="s-name">' + p.name + '</span>';
     html += '</div>';
     html += '<div class="sticker-qr" id="qr' + i + '"></div>';
-    html += '<div class="sticker-footer">טכנודע | סופר-מדע</div>';
+    html += '<div class="sticker-footer">הסופר של הטכנודע</div>';
     html += '</div>';
   }
 
