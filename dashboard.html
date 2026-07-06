@@ -33,6 +33,7 @@
       font-family: 'Rubik', 'Segoe UI', Arial, sans-serif;
       background: radial-gradient(ellipse at 50% 0%, #002266 0%, #001144 55%, #000a22 100%);
       color: #fff;
+      transition: background 6s ease;
     }
 
     /* ── Layout ──────────────────────────────────────────────────── */
@@ -50,11 +51,12 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 24px;
-      background: linear-gradient(90deg, #FF6600 0%, #F7941D 22%, #0066cc 65%, #003d8f 100%);
+      background: linear-gradient(90deg, #cc5500 0%, #dd7700 22%, #0055bb 65%, #003388 100%);
       border-bottom: none;
       box-shadow: 0 4px 24px rgba(0,0,0,0.5);
       position: relative;
       z-index: 10;
+      transition: background 5s ease;
     }
 
     #logo-area img {
@@ -460,6 +462,73 @@
   }
   updateClock();
   setInterval(updateClock, 1000);
+
+  /* ═══════════════════════════════════════════════════════════════
+     Background palette cycling — smooth dark color transitions
+  ═══════════════════════════════════════════════════════════════ */
+  const BG_PALETTES = [
+    // Deep ocean blue (start/default)
+    { pos:'50% 0%',  bg:['#002266','#001144','#000a22'], hdr:['#cc5500','#dd7700','#0055bb','#003388'] },
+    // Amethyst night
+    { pos:'30% 8%',  bg:['#1f0044','#100028','#060011'], hdr:['#6600bb','#4d0099','#290055','#110022'] },
+    // Arctic teal
+    { pos:'70% 5%',  bg:['#002233','#001422','#00060d'], hdr:['#006688','#004d66','#003344','#001122'] },
+    // Forest deep
+    { pos:'20% 12%', bg:['#0c2200','#071400','#030800'], hdr:['#2a6600','#1e4d00','#113300','#071a00'] },
+    // Ruby dusk
+    { pos:'80% 0%',  bg:['#200008','#130004','#060002'], hdr:['#990022','#660011','#33000b','#1a0006'] },
+    // Sapphire deep
+    { pos:'50% 10%', bg:['#001344','#000b2e','#00050f'], hdr:['#0033aa','#002288','#001166','#000844'] },
+    // Royal indigo
+    { pos:'60% 6%',  bg:['#0c0033','#080020','#030010'], hdr:['#3d00aa','#2a0088','#180055','#0c0033'] },
+    // Jade night
+    { pos:'40% 3%',  bg:['#001f1a','#001210','#000608'], hdr:['#006644','#004433','#002222','#001111'] },
+    // Copper dusk
+    { pos:'55% 8%',  bg:['#1a0e00','#110800','#060300'], hdr:['#993300','#772200','#441100','#221000'] },
+    // Midnight violet
+    { pos:'35% 0%',  bg:['#110033','#0a0022','#040011'], hdr:['#550099','#3d0077','#220044','#110022'] },
+  ];
+
+  (function initPaletteCycle() {
+    const header = document.getElementById('header');
+    // Shuffle order (but keep index 0 first since it matches CSS default)
+    const order = [0, ...BG_PALETTES.slice(1).map((_, i) => i + 1).sort(() => Math.random() - 0.5)];
+    let step = 0;
+
+    function applyPalette(idx, animate) {
+      const p = BG_PALETTES[idx];
+      const bgVal = `radial-gradient(ellipse at ${p.pos}, ${p.bg[0]} 0%, ${p.bg[1]} 55%, ${p.bg[2]} 100%)`;
+      const hdrVal = `linear-gradient(90deg, ${p.hdr[0]} 0%, ${p.hdr[1]} 22%, ${p.hdr[2]} 65%, ${p.hdr[3]} 100%)`;
+      if (!animate) {
+        document.body.style.transition = 'none';
+        header.style.transition = 'none';
+      }
+      document.body.style.background = bgVal;
+      header.style.background = hdrVal;
+      if (!animate) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          document.body.style.transition = '';
+          header.style.transition = '';
+        }));
+      }
+    }
+
+    // Apply first palette instantly (matches CSS defaults)
+    applyPalette(order[0], false);
+
+    // Then cycle every 20 seconds with smooth transition
+    setInterval(function() {
+      step = (step + 1) % order.length;
+      if (step === 0) {
+        // Reshuffle when we complete a full cycle
+        for (let i = order.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [order[i], order[j]] = [order[j], order[i]];
+        }
+      }
+      applyPalette(order[step], true);
+    }, 20000);
+  })();
 
   /* ═══════════════════════════════════════════════════════════════
      Celebration tracker  { sessionId → timestamp first seen done }
