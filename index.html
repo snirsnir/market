@@ -2337,7 +2337,8 @@ function showReport() {
     const rs = document.getElementById('recipe-steps');
     if (rc && rn && rs) {
       rn.textContent = reportData.recipe_name;
-      rs.textContent = reportData.recipe_steps || '';
+      rs.innerHTML = escHtml(reportData.recipe_steps || '')
+        .replace(/\*\*(.+?)\*\*/g, '<strong class="product-highlight">$1</strong>');
       rc.style.display = '';
     }
     const hint = document.getElementById('meal-recipe-hint');
