@@ -590,7 +590,7 @@
      Celebration tracker  { sessionId → timestamp first seen done }
   ═══════════════════════════════════════════════════════════════ */
   const DONE_SHOW_MS = 5 * 60 * 1000; // 5 minutes visible after finishing
-  const FADE_MS      = 30_000;         // 30s fade after send/restart
+  const FADE_MS      = 10_000;         // 10s fade after send/restart
 
   /* ═══════════════════════════════════════════════════════════════
      Helpers
@@ -947,6 +947,11 @@
       const newCard = buildCard(id, s);
 
       if (existing) {
+        /* preserve fade state so rebuild doesn't flash back to full opacity */
+        if (existing.style.opacity) newCard.style.opacity   = existing.style.opacity;
+        if (existing.style.transform && existing.style.transform !== 'none') {
+          newCard.style.transform = existing.style.transform;
+        }
         /* replace in-place to preserve grid order */
         grid.replaceChild(newCard, existing);
         /* suppress animation for existing cards (don't replay slideIn) */
