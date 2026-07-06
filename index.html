@@ -1899,7 +1899,7 @@ async function generateMealImage(items) {
     const resp = await fetch('https://weathered-bar-53ef.papasnir.workers.dev/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'dall-e-3', prompt: prompt, size: '1024x1024', quality: 'standard', style: 'vivid', n: 1 })
+      body: JSON.stringify({ model: 'dall-e-3', prompt: prompt, size: '1024x1024', quality: 'standard', n: 1 })
     });
     const text = await resp.text();
     console.log('Image gen response status:', resp.status);
