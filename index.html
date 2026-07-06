@@ -2091,7 +2091,7 @@ ${productLines}
 {
   "title": "כותרת מגניבה לילד (2-4 מילים)",
   "score": "דירוג בכוכבות (למשל ⭐⭐⭐⭐)",
-  "report": "כתוב פסקה זורמת אחת בשפה קלילה ומהנה שפונה גם לילדים וגם להוריהם. אל תשתמש בבולטים, נושאים, או כותרות — רק טקסט רציף. הזכר בטבעיות את המוצרים שנבחרו ומה כל אחד נותן לגוף. סיים במשפט עידוד חם. 4-6 משפטים.",
+  "report": "כתוב 5-7 משפטים זורמים בגוף רבים (בחרתם, הרכבתם) בשפה קלילה ומהנה שפונה לילדים ולהוריהם. אל תשתמש בבולטים — רק טקסט רציף. השתמש במילה 'סל' ולא 'ארוחה'. הזכר לפחות 3-4 מוצרים ספציפיים מהסל עם מה שהם נותנים לגוף — סמן את שמות המוצרים ב-**כוכביים** כמו **תפוח**. הוסף דגשים תזונתיים חשובים. סיים במשפט עידוד חם.",
   "recipe_name": "שם מתכון אחד פשוט שאפשר להכין עם חלק מהמוצרים בסל",
   "recipe_steps": "שלבי הכנה ממוספרים (3-4 שלבים קצרים, הפרד שלבים ב-\n)",
   "next_challenge": "אתגר אחד ספציפי וכיפי לביקור הבא בסופר של הטכנודע",
@@ -2169,7 +2169,9 @@ function showReport() {
 
   // Header + AI summary
   document.getElementById('report-intro').textContent = '🎉 כל הכבוד! סיימתם להכין את הסל.';
-  document.getElementById('report-text').textContent  = reportData.report || '';
+  var reportHtml = escHtml(reportData.report || '')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="product-highlight">$1</strong>');
+  document.getElementById('report-text').innerHTML = reportHtml;
 
   // Nutrition table
   const tbl     = document.getElementById('nutri-table');
