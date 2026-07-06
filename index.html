@@ -1329,7 +1329,7 @@ const firebaseConfig = {
 const GROQ_API_KEY      = "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";
 const GROQ_MODEL        = "llama-3.3-70b-versatile";
 const TOGETHER_API_KEY  = "tgp_v1_IqjsL8etV1Eg0QX2bGGZVlGxTICk3GSUgXf1vJ-0Nx4";
-const TOGETHER_IMG_MODEL= "black-forest-labs/FLUX.1-dev";
+const TOGETHER_IMG_MODEL= "black-forest-labs/FLUX.1-schnell";
 const EMAILJS_SERVICE = "service_7j1s4pl";
 const EMAILJS_TEMPLATE= "template_4jpm77j";
 const EMAILJS_PUBLIC_KEY = "Y0yqKFQQ4ONQ4j396";
@@ -2046,13 +2046,13 @@ async function finishShopping() {
 הסל מכיל ${cartItems.length} מוצרים:
 ${productLines}
 
-ענה אך ורק ב-JSON בפורמט הבא (ללא מרכאות חיצוניות, ללא markdown):
+ענה אך ורק ב-JSON בפורמט הבא (ללא מרכאות חיצוניות, ללא markdown, השתמש ב-\n לירידת שורה בתוך ערכי JSON):
 {
   "title": "כותרת מגניבה לילד (2-4 מילים)",
   "score": "דירוג בכוכבות (למשל ⭐⭐⭐⭐)",
-  "report": "ניתוח תזונתי מעמיק, חיובי ועידודי לילד. 3-5 משפטים.",
+  "report": "ניתוח פרטני לכל מוצר בסל. עבור כל מוצר: שמו + אמוג'י + מה הוא נותן לגוף (חיובי) + נקודה אחת לשיפור אם רלוונטי. הפרד כל מוצר ב-\n. לסיום: משפט עידוד כללי אחד.",
   "recipe_name": "שם מתכון אחד פשוט שאפשר להכין עם חלק מהמוצרים בסל",
-  "recipe_steps": "שלבי הכנה ממוספרים (3-4 שלבים קצרים, כל שלב בשורה חדשה)",
+  "recipe_steps": "שלבי הכנה ממוספרים (3-4 שלבים קצרים, הפרד שלבים ב-\n)",
   "next_challenge": "אתגר אחד ספציפי וכיפי לביקור הבא בסופר של הטכנודע",
   "daily_fact": "עובדה מדעית מפתיעה אחת על אחד המוצרים בסל, לילדים"
 }`;
@@ -2066,7 +2066,7 @@ ${productLines}
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [
-          { role: 'system', content: 'אתה מומחה תזונה לילדים. תמיד עונה בעברית בלבד. ענה אך ורק ב-JSON תקני ללא markdown.' },
+          { role: 'system', content: 'אתה מומחה תזונה לילדים. תמיד עונה בעברית בלבד. ענה אך ורק ב-JSON תקני ללא markdown. אסור להכניס שורות חדשות אמיתיות בתוך ערכי מחרוזות JSON - השתמש תמיד ב-\\n.' },
           { role: 'user',   content: fullPrompt }
         ],
         temperature: 0.7,
@@ -2079,7 +2079,20 @@ ${productLines}
     // Extract JSON from response (strip markdown if present)
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      result = JSON.parse(jsonMatch[0]);
+      // Fix literal control characters inside JSON string values (e.g. newlines in recipe_steps)
+      let jsonStr = jsonMatch[0];
+      let inStr = false, esc = false, fixed = '';
+      for (let i = 0; i < jsonStr.length; i++) {
+        const c = jsonStr[i];
+        if (esc)            { fixed += c; esc = false; continue; }
+        if (c === '\\')     { fixed += c; esc = true;  continue; }
+        if (c === '"')      { fixed += c; inStr = !inStr; continue; }
+        if (inStr && c === '\n') { fixed += '\\n'; continue; }
+        if (inStr && c === '\r') { fixed += '\\r'; continue; }
+        if (inStr && c === '\t') { fixed += '\\t'; continue; }
+        fixed += c;
+      }
+      result = JSON.parse(fixed);
     }
   } catch (err) {
     console.error('Groq error:', err);
