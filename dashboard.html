@@ -63,6 +63,7 @@
       display: flex;
       align-items: center;
       gap: 14px;
+      flex: 1;
     }
 
     #logo-area img {
@@ -73,6 +74,9 @@
     }
 
     #title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
       font-size: 1.45rem;
       font-weight: 800;
       letter-spacing: 1px;
@@ -80,6 +84,7 @@
       text-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 20px rgba(255,220,80,0.5);
       white-space: nowrap;
       animation: titlePulse 4s ease-in-out infinite;
+      pointer-events: none;
     }
 
     @keyframes titlePulse {
@@ -91,15 +96,26 @@
       display: flex;
       align-items: center;
       gap: 14px;
+      flex: 1;
+      justify-content: flex-end;
     }
 
     #clock {
-      font-size: 1.1rem;
-      font-weight: 700;
+      font-size: 1.05rem;
+      font-weight: 800;
       color: #fff;
-      letter-spacing: 1px;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      letter-spacing: 3px;
       direction: ltr;
+      font-variant-numeric: tabular-nums;
+      min-width: 7ch;
+      text-align: center;
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 10px;
+      padding: 6px 14px;
+      backdrop-filter: blur(6px);
+      text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
     }
 
     #connection-badge {
@@ -401,12 +417,13 @@
   <div id="header">
     <div id="logo-area">
       <img src="technoda.png" alt="Technoda" />
-      <div id="title">🔬 הסופר של הטכנודע | לוח חי</div>
+      <div id="connection-badge" class="disconnected">🔴 אין חיבור</div>
     </div>
 
+    <div id="title">🔬 הסופר של הטכנודע | לוח חי</div>
+
     <div id="right-panel">
-      <div id="connection-badge" class="disconnected">🔴 אין חיבור</div>
-      <div id="clock">שעה: 00:00:00</div>
+      <div id="clock">00:00:00</div>
     </div>
   </div>
 
@@ -488,7 +505,7 @@
     const hh  = String(now.getHours()).padStart(2, '0');
     const mm  = String(now.getMinutes()).padStart(2, '0');
     const ss  = String(now.getSeconds()).padStart(2, '0');
-    document.getElementById('clock').textContent = `שעה: ${hh}:${mm}:${ss}`;
+    document.getElementById('clock').textContent = `${hh}:${mm}:${ss}`;
   }
   updateClock();
   setInterval(updateClock, 1000);

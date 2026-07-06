@@ -971,14 +971,25 @@
       border-radius: 16px;
       padding: 16px 18px;
       min-height: 80px;
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: flex-start; gap: 12px;
       border: 1.5px solid rgba(0,102,204,0.1);
     }
-    .scan-popup-ai-icon { font-size: 2rem; flex-shrink: 0; }
+    .scan-popup-ai-icon { font-size: 2rem; flex-shrink: 0; margin-top: 2px; }
     .scan-popup-ai-text {
       font-size: 0.95rem; line-height: 1.65; color: #2a2a2a; font-weight: 500;
       flex: 1;
     }
+    .sp-line1 {
+      font-size: 1rem; font-weight: 700; color: #1a5276;
+      line-height: 1.45; margin-bottom: 8px;
+    }
+    .sp-line2 {
+      font-size: 0.87rem; font-weight: 500; color: #4a3000;
+      background: #fff8e1; border-radius: 8px;
+      padding: 7px 10px; border-right: 3px solid #f9a825;
+      line-height: 1.55;
+    }
+    .sp-fact-label { font-weight: 800; color: #e65100; }
     .scan-popup-ai-text.loading {
       color: #999; font-style: italic;
       display: flex; align-items: center; gap: 8px;
@@ -1797,10 +1808,6 @@ function showScanPopup(item) {
     'linear-gradient(135deg,' + t.c1 + '18 0%,' + t.c2 + '10 100%)';
 
   popup.style.display = 'flex';
-
-  // Auto-close after 9 sec
-  if (scanPopupTimer) clearTimeout(scanPopupTimer);
-  scanPopupTimer = setTimeout(closeScanPopup, 9000);
 }
 
 function updateScanPopup(text) {
@@ -1810,7 +1817,15 @@ function updateScanPopup(text) {
 
   if (text) {
     textEl.className = 'scan-popup-ai-text';
-    textEl.textContent = text;
+    // Split into 2 sentences: announcement + fun fact
+    var m = text.match(/^(.*?[.!?])\s+(.+)$/s);
+    var line1 = m ? m[1] : text;
+    var line2 = m ? m[2] : '';
+    var html = '<div class="sp-line1">' + escHtml(line1) + '</div>';
+    if (line2) {
+      html += '<div class="sp-line2"><span class="sp-fact-label">💡 הידעת?</span> ' + escHtml(line2) + '</div>';
+    }
+    textEl.innerHTML = html;
     aiBox.querySelector('.scan-popup-ai-icon').textContent = '✨';
   } else {
     // No AI text — hide the box
