@@ -178,6 +178,11 @@
       border-radius: 16px;
       overflow: hidden;
       min-height: 0;
+      /* Cap card size so 1-2 sessions don't fill the entire 86" screen */
+      max-width: 640px;
+      max-height: 800px;
+      width: 100%;
+      margin: auto;           /* center in grid cell when smaller than cell */
       box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
@@ -833,15 +838,18 @@
     grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
     grid.style.gridTemplateRows    = `repeat(${rows}, 1fr)`;
 
-    // Scale card content: set font-size on grid so all em units inside cards scale
+    // Scale card content: font-size drives all em units inside cards
     const gap    = 12;
     const availW = window.innerWidth  - 32;
     const availH = window.innerHeight - 64 - 32;
     const cardW  = (availW - gap * (cols - 1)) / cols;
     const cardH  = (availH - gap * (rows - 1)) / rows;
-    // Reference card: 300px wide × 420px tall → 16px font
-    const scale  = Math.min(cardW / 300, cardH / 420);
-    const fs     = Math.max(10, Math.min(30, Math.round(16 * scale)));
+    // Clamp to card's actual max-size so font doesn't overscale on large screens
+    const effectiveW = Math.min(cardW, 640);
+    const effectiveH = Math.min(cardH, 800);
+    // Reference card: 400px wide × 500px tall → 16px base font
+    const scale  = Math.min(effectiveW / 400, effectiveH / 500);
+    const fs     = Math.max(10, Math.min(20, Math.round(16 * scale)));
     grid.style.fontSize = fs + 'px';
   }
 
