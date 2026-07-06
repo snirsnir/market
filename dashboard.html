@@ -59,16 +59,20 @@
       transition: background 5s ease;
     }
 
+    #logo-area {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
     #logo-area img {
       height: 40px;
       filter: brightness(0) invert(1);
       opacity: 0.9;
+      flex-shrink: 0;
     }
 
     #title {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
       font-size: 1.45rem;
       font-weight: 800;
       letter-spacing: 1px;
@@ -188,11 +192,12 @@
 
     /* ── Card Header ─────────────────────────────────────────────── */
     .card-header {
-      padding: 14px 16px 12px;
+      padding: 0.85em 1em 0.75em;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-radius: 12px 12px 0 0;
+      flex-shrink: 0;
     }
     .card-header.status-shopping  { background: linear-gradient(135deg, #29ABE2, #1a7eb0); }
     .card-header.status-analyzing { background: linear-gradient(135deg, #F7941D, #d4650a); }
@@ -200,7 +205,7 @@
     .card-header.status-default   { background: linear-gradient(135deg, #414042, #2a2a2a); }
 
     .card-name {
-      font-size: 1.5rem;
+      font-size: 1.5em;
       font-weight: 900;
       color: #fff;
       text-shadow: 0 2px 6px rgba(0,0,0,0.3);
@@ -212,25 +217,25 @@
     }
 
     .status-badge {
-      font-size: 0.72rem;
+      font-size: 0.72em;
       font-weight: 800;
-      padding: 4px 10px;
+      padding: 0.25em 0.6em;
       border-radius: 20px;
       background: rgba(255,255,255,0.25);
       color: #fff;
       border: 1px solid rgba(255,255,255,0.4);
       white-space: nowrap;
-      letter-spacing: 0.5px;
+      flex-shrink: 0;
     }
 
     /* ── Card Body ───────────────────────────────────────────────── */
     .card-body {
       flex: 1;
       min-height: 0;
-      padding: 14px 16px;
+      padding: 0.75em 1em;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 0.55em;
       background: #fff;
       border-radius: 0 0 12px 12px;
       overflow: hidden;
@@ -240,15 +245,16 @@
     .progress-wrap {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 0.25em;
+      flex-shrink: 0;
     }
     .progress-label {
-      font-size: 0.8rem;
+      font-size: 0.8em;
       font-weight: 700;
       color: #555;
     }
     .progress-track {
-      height: 10px;
+      height: 0.6em;
       background: #eee;
       border-radius: 10px;
       overflow: hidden;
@@ -265,11 +271,12 @@
     /* Nutrient icons */
     .nutrient-row {
       display: flex;
-      gap: 10px;
+      gap: 0.6em;
       align-items: center;
+      flex-shrink: 0;
     }
     .nutrient-icon {
-      font-size: 1.4rem;
+      font-size: 1.4em;
       transition: opacity 0.3s, transform 0.3s;
       cursor: default;
       position: relative;
@@ -283,7 +290,7 @@
       transform: translateX(-50%);
       background: #222;
       color: #fff;
-      font-size: 0.65rem;
+      font-size: 0.65em;
       padding: 3px 7px;
       border-radius: 6px;
       white-space: nowrap;
@@ -297,54 +304,55 @@
     .items-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      padding: 4px 0;
+      gap: 0.35em;
+      padding: 0.2em 0;
+      overflow: hidden;
     }
     .item-thumb {
-      width: 48px; height: 48px;
+      width: 3em; height: 3em;
       border-radius: 10px;
       background: #f0f2f5;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.6rem;
+      font-size: 1.6em;
       overflow: hidden;
       flex-shrink: 0;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       border: 1.5px solid rgba(255,255,255,0.6);
     }
-    .item-thumb img { width: 48px; height: 48px; object-fit: contain; display: block; }
+    .item-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .more-items {
-      width: 48px; height: 48px;
+      width: 3em; height: 3em;
       border-radius: 10px;
       background: rgba(0,0,0,0.08);
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.75rem; font-weight: 700; color: #555;
+      font-size: 0.75em; font-weight: 700; color: #555;
     }
 
     /* ── Celebration overlay ──────────────────────────────────────── */
     .celebration-content {
       flex: 1;
       min-height: 0;
-      padding: 10px 16px 14px;
+      padding: 0.6em 1em 0.85em;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 0.4em;
       background: linear-gradient(180deg, rgba(141,198,63,0.08), rgba(41,171,226,0.06));
       border-radius: 0 0 12px 12px;
       overflow: hidden;
     }
 
     .ai-title {
-      font-size: 1.3rem;
+      font-size: 1.4em;
       font-weight: 900;
       text-align: center;
       color: var(--purple);
-      letter-spacing: 0.5px;
+      letter-spacing: 0.03em;
     }
 
     .star-row {
-      font-size: 1.3rem;
-      letter-spacing: 3px;
+      font-size: 1.4em;
+      letter-spacing: 0.1em;
     }
 
 
@@ -355,12 +363,12 @@
     }
 
     /* Nutrient gauge */
-    .nutrient-gauge-wrap { display: flex; flex-direction: column; gap: 5px; }
-    .ng-row { display: flex; align-items: center; gap: 6px; }
-    .ng-icon { font-size: 0.88rem; width: 20px; flex-shrink: 0; text-align: center; }
-    .ng-track { flex: 1; height: 8px; background: #e8e8e8; border-radius: 8px; overflow: hidden; }
+    .nutrient-gauge-wrap { display: flex; flex-direction: column; gap: 0.3em; flex-shrink: 0; }
+    .ng-row { display: flex; align-items: center; gap: 0.4em; }
+    .ng-icon { font-size: 0.88em; width: 1.3em; flex-shrink: 0; text-align: center; }
+    .ng-track { flex: 1; height: 0.5em; background: #e8e8e8; border-radius: 8px; overflow: hidden; }
     .ng-fill { height: 100%; border-radius: 8px; min-width: 3px; transition: width 0.5s ease; }
-    .ng-value { font-size: 0.7rem; font-weight: 700; color: #666; width: 28px; text-align: left; flex-shrink: 0; }
+    .ng-value { font-size: 0.7em; font-weight: 700; color: #666; width: 1.8em; text-align: left; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -370,9 +378,8 @@
   <div id="header">
     <div id="logo-area">
       <img src="technoda.png" alt="Technoda" />
+      <div id="title">🔬 הסופר של הטכנודע | לוח חי</div>
     </div>
-
-    <div id="title">🔬 הסופר של הטכנודע | לוח חי</div>
 
     <div id="right-panel">
       <div id="connection-badge" class="disconnected">🔴 אין חיבור</div>
@@ -620,10 +627,10 @@
     headerLeft.style.cssText = 'display:flex;align-items:center;gap:8px;flex:1;min-width:0;overflow:hidden;';
     if (av) {
       const avWrap = document.createElement('span');
-      avWrap.style.cssText = 'width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));';
+      avWrap.style.cssText = 'width:2.5em;height:2.5em;border-radius:50%;overflow:hidden;flex-shrink:0;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));';
       const avImg = document.createElement('img');
       avImg.src = avatarUrl(av);
-      avImg.style.cssText = 'width:40px;height:40px;display:block;border-radius:50%;';
+      avImg.style.cssText = 'width:100%;height:100%;display:block;border-radius:50%;';
       avImg.alt = av.name;
       avWrap.appendChild(avImg);
       headerLeft.appendChild(avWrap);
@@ -806,6 +813,17 @@
     const rows = n > 0 ? Math.ceil(n / cols) : 1;
     grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
     grid.style.gridTemplateRows    = `repeat(${rows}, 1fr)`;
+
+    // Scale card content: set font-size on grid so all em units inside cards scale
+    const gap    = 12;
+    const availW = window.innerWidth  - 32;
+    const availH = window.innerHeight - 64 - 32;
+    const cardW  = (availW - gap * (cols - 1)) / cols;
+    const cardH  = (availH - gap * (rows - 1)) / rows;
+    // Reference card: 300px wide × 420px tall → 16px font
+    const scale  = Math.min(cardW / 300, cardH / 420);
+    const fs     = Math.max(10, Math.min(30, Math.round(16 * scale)));
+    grid.style.fontSize = fs + 'px';
   }
 
   window.addEventListener('resize', updateGridLayout);
