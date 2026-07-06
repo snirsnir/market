@@ -323,34 +323,31 @@
     }
     .nutrient-icon:hover .tooltip { opacity: 1; }
 
-    /* Items list */
-    .items-list {
+    /* Items grid */
+    .items-grid {
       display: flex;
-      flex-direction: column;
-      gap: 3px;
-      max-height: 160px;
-      overflow-y: auto;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px 0;
     }
-    .items-list::-webkit-scrollbar { width: 4px; }
-    .items-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
-
-    .item-row {
-      font-size: 0.82rem;
-      color: #444;
-      padding: 2px 0;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      border-bottom: 1px solid rgba(0,0,0,0.05);
+    .item-thumb {
+      width: 48px; height: 48px;
+      border-radius: 10px;
+      background: #f0f2f5;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      border: 1.5px solid rgba(255,255,255,0.6);
     }
-    .item-row:last-child { border-bottom: none; }
-    .item-emoji { font-size: 1rem; }
-    .item-name  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item-thumb img { width: 48px; height: 48px; object-fit: contain; display: block; }
     .more-items {
-      font-size: 0.75rem;
-      color: #999;
-      text-align: center;
-      padding-top: 3px;
+      width: 48px; height: 48px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: #555;
     }
 
     /* ── Celebration overlay ──────────────────────────────────────── */
@@ -760,38 +757,30 @@
 
   function buildItemsList(items) {
     const wrap = document.createElement('div');
-    wrap.className = 'items-list';
+    wrap.className = 'items-grid';
 
     const visible = items.slice(0, ITEM_LIMIT);
     visible.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'item-row';
+      const thumb = document.createElement('div');
+      thumb.className = 'item-thumb';
+      thumb.title = item.name || '';
 
-      const iconEl = document.createElement('span');
-      iconEl.className = 'item-emoji';
       if (item.image) {
         const img = document.createElement('img');
         img.src = item.image;
-        img.style.cssText = 'width:22px;height:22px;object-fit:contain;vertical-align:middle;';
-        img.alt = '';
-        iconEl.appendChild(img);
+        img.alt = item.name || '';
+        thumb.appendChild(img);
       } else {
-        iconEl.textContent = item.emoji || '🛒';
+        thumb.textContent = item.emoji || '🛒';
       }
 
-      const nameEl = document.createElement('span');
-      nameEl.className   = 'item-name';
-      nameEl.textContent = item.name || item.productName || '';
-
-      row.appendChild(iconEl);
-      row.appendChild(nameEl);
-      wrap.appendChild(row);
+      wrap.appendChild(thumb);
     });
 
     if (items.length > ITEM_LIMIT) {
       const more = document.createElement('div');
       more.className   = 'more-items';
-      more.textContent = `+ עוד ${items.length - ITEM_LIMIT} מוצרים`;
+      more.textContent = `+${items.length - ITEM_LIMIT}`;
       wrap.appendChild(more);
     }
 
