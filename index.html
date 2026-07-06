@@ -1005,6 +1005,20 @@
       transition: transform 0.1s;
     }
     .scan-popup-btn:active { transform: scale(0.97); }
+
+    /* ─── Report extras ─────────────────────────────── */
+    .nutri-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+    .nutri-item { background: #f8f9ff; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .nutri-item-label { font-size: 12px; font-weight: 700; color: #555; }
+    .nutri-item-stars { font-size: 18px; letter-spacing: 2px; }
+    .nutri-item-val { font-size: 11px; color: #999; }
+    .nutri-missing { margin-top: 10px; padding: 10px 14px; background: #fff8e6; border-radius: 10px; border-right: 3px solid #F7941D; font-size: 13px; color: #7a4a00; }
+
+    .recipe-name { font-size: 16px; font-weight: 800; color: #003d8f; margin-bottom: 10px; }
+    .recipe-steps { font-size: 14px; line-height: 1.8; color: #333; white-space: pre-line; }
+
+    .challenge-box { background: linear-gradient(135deg, #fff8e6, #fff3d4); border-radius: 12px; padding: 14px 16px; border-right: 4px solid #F7941D; font-size: 15px; font-weight: 600; color: #5a3000; line-height: 1.6; }
+    .fact-box { background: linear-gradient(135deg, #f0f7ff, #e8f3ff); border-radius: 12px; padding: 14px 16px; border-right: 4px solid #0066cc; font-size: 14px; color: #003366; line-height: 1.7; }
   </style>
 </head>
 <body>
@@ -1171,6 +1185,32 @@
       <div class="report-card">
         <div class="report-card-title">📊 ניתוח תזונתי</div>
         <div class="report-text" id="report-text"></div>
+      </div>
+
+      <!-- Nutrition card -->
+      <div class="report-card">
+        <div class="report-card-title">⭐ כרטיס תזונה אישי</div>
+        <div class="nutri-grid" id="nutri-grid"></div>
+        <div class="nutri-missing" id="nutri-missing" style="display:none;"></div>
+      </div>
+
+      <!-- Recipe card -->
+      <div class="report-card" id="recipe-card" style="display:none;">
+        <div class="report-card-title">🍳 מה אפשר להכין מהסל?</div>
+        <div class="recipe-name" id="recipe-name"></div>
+        <div class="recipe-steps" id="recipe-steps"></div>
+      </div>
+
+      <!-- Next challenge card -->
+      <div class="report-card" id="challenge-card" style="display:none;">
+        <div class="report-card-title">🏆 האתגר לביקור הבא</div>
+        <div class="challenge-box" id="challenge-text"></div>
+      </div>
+
+      <!-- Daily fact card -->
+      <div class="report-card" id="fact-card" style="display:none;">
+        <div class="report-card-title">🔬 עובדת המדע של היום</div>
+        <div class="fact-box" id="fact-text"></div>
       </div>
 
       <!-- Products in cart -->
@@ -1896,7 +1936,11 @@ ${productLines}
 {
   "title": "כותרת מגניבה לילד (2-4 מילים)",
   "score": "דירוג בכוכבות (למשל ⭐⭐⭐⭐)",
-  "report": "ניתוח תזונתי מעמיק, חיובי ועידודי לילד. 3-5 משפטים."
+  "report": "ניתוח תזונתי מעמיק, חיובי ועידודי לילד. 3-5 משפטים.",
+  "recipe_name": "שם מתכון אחד פשוט שאפשר להכין עם חלק מהמוצרים בסל",
+  "recipe_steps": "שלבי הכנה ממוספרים (3-4 שלבים קצרים, כל שלב בשורה חדשה)",
+  "next_challenge": "אתגר אחד ספציפי וכיפי לביקור הבא בסופר-מדע",
+  "daily_fact": "עובדה מדעית מפתיעה אחת על אחד המוצרים בסל, לילדים"
 }`;
 
   // Call Groq
@@ -1912,7 +1956,7 @@ ${productLines}
           { role: 'user',   content: fullPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 800
+        max_tokens: 1200
       })
     });
     const data = await response.json();
@@ -1959,6 +2003,80 @@ function showReport() {
   document.getElementById('report-stars').textContent      = reportData.score  || '⭐⭐⭐';
   document.getElementById('report-text').textContent       = reportData.report || '';
 
+  // Nutrition card
+  const targets = { carbs: 150, protein: 50, fat: 50, vitamins: 20 };
+  const labels  = { carbs: '🌾 פחמימות', protein: '💪 חלבונים', fat: '🥑 שומנים', vitamins: '🍊 ויטמינים' };
+  const totals  = { carbs: 0, protein: 0, fat: 0, vitamins: 0 };
+  cartItems.forEach(function(item) {
+    totals.carbs    += Number(item.carbs)    || 0;
+    totals.protein  += Number(item.protein)  || 0;
+    totals.fat      += Number(item.fat)      || 0;
+    totals.vitamins += Number(item.vitamins) || 0;
+  });
+  const nutriGrid = document.getElementById('nutri-grid');
+  if (nutriGrid) {
+    nutriGrid.innerHTML = '';
+    ['carbs','protein','fat','vitamins'].forEach(function(key) {
+      const pct   = Math.min(totals[key] / targets[key], 1);
+      const stars = Math.max(1, Math.round(pct * 5));
+      const filled = '⭐'.repeat(stars);
+      const empty  = '☆'.repeat(5 - stars);
+      const div = document.createElement('div');
+      div.className = 'nutri-item';
+      div.innerHTML =
+        '<span class="nutri-item-label">' + labels[key] + '</span>' +
+        '<span class="nutri-item-stars">' + filled + empty + '</span>' +
+        '<span class="nutri-item-val">' + totals[key] + 'g מתוך ' + targets[key] + 'g</span>';
+      nutriGrid.appendChild(div);
+    });
+    const missing = [];
+    if (totals.carbs    < targets.carbs    * 0.3) missing.push('פחמימות');
+    if (totals.protein  < targets.protein  * 0.3) missing.push('חלבונים');
+    if (totals.fat      < targets.fat      * 0.3) missing.push('שומנים');
+    if (totals.vitamins < targets.vitamins * 0.3) missing.push('ויטמינים');
+    const missingEl = document.getElementById('nutri-missing');
+    if (missingEl) {
+      if (missing.length > 0) {
+        missingEl.style.display = '';
+        missingEl.textContent = '💡 כדאי להוסיף יותר: ' + missing.join(', ');
+      } else {
+        missingEl.style.display = 'none';
+      }
+    }
+  }
+
+  // Recipe card
+  if (reportData && reportData.recipe_name) {
+    const rc = document.getElementById('recipe-card');
+    const rn = document.getElementById('recipe-name');
+    const rs = document.getElementById('recipe-steps');
+    if (rc && rn && rs) {
+      rn.textContent = reportData.recipe_name;
+      rs.textContent = reportData.recipe_steps || '';
+      rc.style.display = '';
+    }
+  }
+
+  // Challenge card
+  if (reportData && reportData.next_challenge) {
+    const cc = document.getElementById('challenge-card');
+    const ct = document.getElementById('challenge-text');
+    if (cc && ct) {
+      ct.textContent = reportData.next_challenge;
+      cc.style.display = '';
+    }
+  }
+
+  // Daily fact card
+  if (reportData && reportData.daily_fact) {
+    const fc = document.getElementById('fact-card');
+    const ft = document.getElementById('fact-text');
+    if (fc && ft) {
+      ft.textContent = reportData.daily_fact;
+      fc.style.display = '';
+    }
+  }
+
   // Product chips
   const chipsEl = document.getElementById('report-products');
   chipsEl.innerHTML = '';
@@ -2003,6 +2121,10 @@ async function sendEmail() {
       ai_title:      reportData?.title  || '',
       ai_score:      reportData?.score  || '',
       ai_report:     reportData?.report || '',
+      recipe_name:    reportData?.recipe_name    || '',
+      recipe_steps:   reportData?.recipe_steps   || '',
+      next_challenge: reportData?.next_challenge || '',
+      daily_fact:     reportData?.daily_fact     || '',
       products_list: productList,
       date:          new Date().toLocaleDateString('he-IL')
     });
