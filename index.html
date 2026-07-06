@@ -1136,7 +1136,7 @@
     <!-- Sticky action bar -->
     <div class="cart-actions">
       <button class="btn-scan" id="btn-scan" onclick="openScanner()">📷 סרוק מוצר</button>
-      <button class="btn-finish" id="btn-finish" onclick="finishShopping()" disabled>עוד 7 מוצרים לסיום ⏳</button>
+      <button class="btn-finish" id="btn-finish" onclick="finishShopping()" disabled>חסרים עוד לפחות 7 מוצרים להרכבת הסל</button>
     </div>
   </div>
 
@@ -1636,7 +1636,7 @@ function updateCart() {
     const remaining = MIN_ITEMS - count;
     if (remaining > 0) {
       btnFinish.disabled    = true;
-      btnFinish.textContent = 'עוד ' + remaining + ' מוצרים לסיום ⏳';
+      btnFinish.textContent = 'חסרים עוד לפחות ' + remaining + ' מוצרים להרכבת הסל';
     } else {
       btnFinish.disabled    = false;
       btnFinish.textContent = '🤖 שלחו לניתוח AI';
