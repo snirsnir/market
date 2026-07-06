@@ -590,6 +590,7 @@
      Celebration tracker  { sessionId → timestamp first seen done }
   ═══════════════════════════════════════════════════════════════ */
   const DONE_SHOW_MS = 5 * 60 * 1000; // 5 minutes visible after finishing
+  const FADE_MS      = 30_000;         // 30s fade after send/restart
 
   /* ═══════════════════════════════════════════════════════════════
      Helpers
@@ -617,11 +618,27 @@
     return '⭐'.repeat(Math.max(0, Math.min(r, 5)));
   }
 
-  /* 5-second ticker — removes done cards that exceeded DONE_SHOW_MS */
+  /* 1-second ticker — fades cards after send/restart, removes after 5 min */
   setInterval(function() {
     const now = Date.now();
     grid.querySelectorAll('.session-card').forEach(function(el) {
       if (el.dataset.status !== 'done') return;
+
+      // Fade out over 30s when reportDoneAt is set
+      const reportDoneAt = Number(el.dataset.reportDoneAt) || 0;
+      if (reportDoneAt) {
+        const elapsed  = now - reportDoneAt;
+        const progress = Math.min(1, elapsed / FADE_MS);
+        el.style.opacity   = Math.max(0, 1 - progress).toFixed(3);
+        el.style.transform = 'scale(' + (1 - progress * 0.15).toFixed(3) + ')';
+        if (progress >= 1 && !el.classList.contains('bubble-out')) {
+          el.classList.add('bubble-out');
+          setTimeout(function() { el.remove(); updateGridLayout(); }, 460);
+        }
+        return;
+      }
+
+      // Auto-remove after 5 min from finishedAt
       const finishedAt = Number(el.dataset.finishedAt) || 0;
       if (finishedAt && (now - finishedAt) >= DONE_SHOW_MS) {
         if (!el.classList.contains('bubble-out')) {
@@ -630,7 +647,7 @@
         }
       }
     });
-  }, 5000);
+  }, 1000);
 
   /* ═══════════════════════════════════════════════════════════════
      Build one card element
@@ -642,10 +659,12 @@
     const aiTitle   = session.aiTitle   || '';
     const starRating = session.starRating != null ? session.starRating : null;
     const card = document.createElement('div');
-    card.className   = 'session-card' + (status === 'done' ? ' card-ready' : '');
-    card.dataset.sid        = sessionId;
-    card.dataset.status     = status;
-    card.dataset.finishedAt = session.finishedAt || 0;
+    const isReportDone = status === 'done' && !!session.reportDoneAt;
+    card.className   = 'session-card' + (status === 'done' && !isReportDone ? ' card-ready' : '');
+    card.dataset.sid          = sessionId;
+    card.dataset.status       = status;
+    card.dataset.finishedAt   = session.finishedAt   || 0;
+    card.dataset.reportDoneAt = session.reportDoneAt || 0;
 
     /* ── header ── */
     const header = document.createElement('div');
@@ -879,7 +898,7 @@
       const created = s.createdAt || s.startTime || s.timestamp || 0;
       if ((now - created) >= fourHours) return false;
       if (s.status === 'done') {
-        if (s.reportDoneAt) return false; // sent report / restarted → remove immediately
+        if (s.reportDoneAt) return (now - s.reportDoneAt) < FADE_MS; // keep during 30s fade
         const finishedAt = s.finishedAt || 0;
         if (finishedAt && (now - finishedAt) >= DONE_SHOW_MS) return false; // 5 min elapsed
         return true;
