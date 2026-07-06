@@ -1019,6 +1019,12 @@
 
     .challenge-box { background: linear-gradient(135deg, #fff8e6, #fff3d4); border-radius: 12px; padding: 14px 16px; border-right: 4px solid #F7941D; font-size: 15px; font-weight: 600; color: #5a3000; line-height: 1.6; }
     .fact-box { background: linear-gradient(135deg, #f0f7ff, #e8f3ff); border-radius: 12px; padding: 14px 16px; border-right: 4px solid #0066cc; font-size: 14px; color: #003366; line-height: 1.7; }
+
+    .meal-image-wrap { border-radius: 16px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.12); position: relative; background: #f0f4ff; min-height: 180px; display: flex; align-items: center; justify-content: center; }
+    .meal-image-wrap img { width: 100%; border-radius: 16px; display: block; }
+    .meal-image-loading { color: #aaa; font-size: 14px; text-align: center; padding: 40px 20px; }
+    .meal-image-loading .img-spinner { font-size: 2rem; display: block; margin-bottom: 10px; animation: spin 1.5s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -1213,6 +1219,17 @@
         <div class="fact-box" id="fact-text"></div>
       </div>
 
+      <!-- AI Meal Image card -->
+      <div class="report-card" id="meal-image-card">
+        <div class="report-card-title">🎨 הארוחה שלכם בציור</div>
+        <div class="meal-image-wrap" id="meal-image-wrap">
+          <div class="meal-image-loading">
+            <span class="img-spinner">🎨</span>
+            יוצר ציור מיוחד עבורכם...
+          </div>
+        </div>
+      </div>
+
       <!-- Products in cart -->
       <div class="report-card">
         <div class="report-card-title">🛒 מה היה בסל</div>
@@ -1282,8 +1299,10 @@ const firebaseConfig = {
   appId: "1:206448884373:web:5193af078826df8e15f99c",
   databaseURL: "https://market-ddfe6-default-rtdb.europe-west1.firebasedatabase.app/"
 };
-const GROQ_API_KEY    = "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";
-const GROQ_MODEL      = "llama-3.3-70b-versatile";
+const GROQ_API_KEY      = "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";
+const GROQ_MODEL        = "llama-3.3-70b-versatile";
+const TOGETHER_API_KEY  = "tgp_v1_IqjsL8etV1Eg0QX2bGGZVlGxTICk3GSUgXf1vJ-0Nx4";
+const TOGETHER_IMG_MODEL= "black-forest-labs/FLUX.1-schnell";
 const EMAILJS_SERVICE = "service_7j1s4pl";
 const EMAILJS_TEMPLATE= "template_4jpm77j";
 const EMAILJS_PUBLIC_KEY = "Y0yqKFQQ4ONQ4j396";
@@ -1797,6 +1816,26 @@ function playBeep() {
   } catch(e) {}
 }
 
+async function generateMealImage(items) {
+  const names = items.map(function(i) { return i.name; }).join(', ');
+  const prompt =
+    'A colorful fun cartoon illustration for children of a balanced meal tray with: ' + names +
+    '. Bright cheerful colors, flat design, white background, cute kawaii style, no text, food icons arranged neatly on a tray.';
+  try {
+    const resp = await fetch('https://api.together.xyz/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOGETHER_API_KEY },
+      body: JSON.stringify({ model: TOGETHER_IMG_MODEL, prompt: prompt, width: 512, height: 512, n: 1 })
+    });
+    if (!resp.ok) { console.warn('Image gen error:', resp.status); return null; }
+    const data = await resp.json();
+    return data?.data?.[0]?.url || null;
+  } catch(e) {
+    console.warn('Image gen error:', e);
+    return null;
+  }
+}
+
 async function generateProductSummary(item) {
   if (!item.aiFact) return '';
   const systemPrompt = 'אתה מדריך תזונה כיפי לילדים בני 10 במוזיאון מדע. תמיד עונה בעברית בלבד. כתוב קצר, קליל ומהנה.';
@@ -2093,6 +2132,17 @@ function showReport() {
   document.getElementById('email-success').classList.remove('show');
 
   showScreen('screen-report');
+
+  // Generate meal image in background
+  generateMealImage(cartItems).then(function(url) {
+    const wrap = document.getElementById('meal-image-wrap');
+    if (!wrap) return;
+    if (url) {
+      wrap.innerHTML = '<img src="' + url + '" alt="ציור הארוחה שלכם" />';
+    } else {
+      wrap.innerHTML = '<div class="meal-image-loading">😔 לא הצלחנו לייצר את הציור הפעם</div>';
+    }
+  });
 }
 
 /* ══════════════════════════════════════════════════════════
