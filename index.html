@@ -1895,26 +1895,9 @@ async function generateMealImage(items) {
     'Each food item is clearly identifiable, colorful, appetizing and beautifully arranged. ' +
     'No text, no letters, no people, no extra objects. Only the food items listed.';
 
-  try {
-    const resp = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_API_KEY },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: prompt,
-        size: '1024x1024',
-        quality: 'standard',
-        style: 'vivid',
-        n: 1
-      })
-    });
-    if (!resp.ok) { const err = await resp.text(); console.warn('Image gen error:', resp.status, err); return null; }
-    const data = await resp.json();
-    return data?.data?.[0]?.url || null;
-  } catch(e) {
-    console.warn('Image gen error:', e);
-    return null;
-  }
+  var seed = Math.floor(Math.random() * 999999);
+  return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
+    '?width=1024&height=1024&model=flux&nologo=true&enhance=true&seed=' + seed;
 }
 
 async function generateProductSummary(item) {
@@ -2243,15 +2226,17 @@ function showReport() {
 
   showScreen('screen-report');
 
-  // Generate meal image in background
+  // Generate meal image — Pollinations returns URL immediately, image loads async
   generateMealImage(cartItems).then(function(url) {
     const wrap = document.getElementById('meal-image-wrap');
     if (!wrap) return;
-    if (url) {
-      wrap.innerHTML = '<img src="' + url + '" alt="ציור הארוחה שלכם" />';
-    } else {
-      wrap.innerHTML = '<div class="meal-image-loading">😔 לא הצלחנו לייצר את הציור הפעם</div>';
-    }
+    if (!url) { wrap.innerHTML = '<div class="meal-image-loading">😔 לא הצלחנו לייצר את הציור הפעם</div>'; return; }
+    const img = new Image();
+    img.alt = 'ציור הארוחה שלכם';
+    img.style.cssText = 'width:100%;border-radius:16px;display:block;';
+    img.onload  = function() { wrap.innerHTML = ''; wrap.appendChild(img); };
+    img.onerror = function() { wrap.innerHTML = '<div class="meal-image-loading">😔 לא הצלחנו לייצר את הציור הפעם</div>'; };
+    img.src = url;
   });
 }
 
