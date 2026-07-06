@@ -742,21 +742,19 @@
       flex-shrink: 0;
     }
     .report-child-name {
-      color: rgba(255,255,255,0.65);
-      font-size: 13px;
-      font-weight: 500;
-      margin-bottom: 4px;
-    }
-    .report-ai-title {
-      color: var(--blue);
-      font-size: 26px;
+      color: #fff;
+      font-size: 28px;
       font-weight: 900;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.35);
       line-height: 1.2;
     }
-    .report-stars {
-      font-size: 28px;
-      letter-spacing: 4px;
+    .report-ai-title {
+      color: rgba(255,255,255,0.85);
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 0;
+      line-height: 1.4;
     }
 
     .report-body {
@@ -1034,10 +1032,12 @@
 
     /* ─── Report extras ─────────────────────────────── */
     .nutri-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
-    .nutri-item { background: #f8f9ff; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .nutri-item { background: #f8f9ff; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
     .nutri-item-label { font-size: 12px; font-weight: 700; color: #555; }
-    .nutri-item-stars { font-size: 18px; letter-spacing: 2px; }
+    .nutri-bar-track { height: 10px; background: rgba(0,0,0,0.08); border-radius: 6px; overflow: hidden; }
+    .nutri-bar-fill { height: 100%; border-radius: 6px; transition: width 0.9s cubic-bezier(0.34,1.2,0.64,1); }
     .nutri-item-val { font-size: 11px; color: #999; }
+    .product-highlight { font-weight: 800; color: #003d8f; background: rgba(0,61,143,0.08); border-radius: 4px; padding: 0 3px; }
     .nutri-missing { margin-top: 10px; padding: 10px 14px; background: #fff8e6; border-radius: 10px; border-right: 3px solid #F7941D; font-size: 13px; color: #7a4a00; }
 
     .recipe-name { font-size: 16px; font-weight: 800; color: #003d8f; margin-bottom: 10px; }
@@ -1209,7 +1209,6 @@
     <div class="report-header">
       <div class="report-child-name" id="report-child-name"></div>
       <div class="report-ai-title" id="report-ai-title"></div>
-      <div class="report-stars" id="report-stars">⭐⭐⭐</div>
     </div>
 
     <div class="report-body">
@@ -1221,7 +1220,7 @@
 
       <!-- Nutrition card -->
       <div class="report-card">
-        <div class="report-card-title">⭐ כרטיס תזונה אישי</div>
+        <div class="report-card-title">📈 כרטיס תזונה אישי</div>
         <div class="nutri-grid" id="nutri-grid"></div>
         <div class="nutri-missing" id="nutri-missing" style="display:none;"></div>
       </div>
@@ -1584,6 +1583,7 @@ async function startSession() {
 }
 
 function clearSession() {
+  if (sessionId) db.ref('sessions/' + sessionId).update({ reportDoneAt: Date.now() });
   localStorage.removeItem('sessionId');
   localStorage.removeItem('sessionName');
   sessionId   = null;
@@ -1900,9 +1900,9 @@ async function generateMealImage(items) {
     const resp = await fetch('https://api.together.xyz/v1/images/generations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOGETHER_API_KEY },
-      body: JSON.stringify({ model: TOGETHER_IMG_MODEL, prompt: prompt, width: 768, height: 768, steps: 28, n: 1 })
+      body: JSON.stringify({ model: TOGETHER_IMG_MODEL, prompt: prompt, width: 768, height: 768, steps: 28, guidance_scale: 3.5, n: 1 })
     });
-    if (!resp.ok) { console.warn('Image gen error:', resp.status); return null; }
+    if (!resp.ok) { const err = await resp.text(); console.warn('Image gen error:', resp.status, err); return null; }
     const data = await resp.json();
     return data?.data?.[0]?.url || null;
   } catch(e) {
@@ -2112,12 +2112,21 @@ ${productLines}
 function showReport() {
   document.getElementById('report-child-name').textContent = 'הדו"ח של ' + sessionName;
   document.getElementById('report-ai-title').textContent   = reportData.title  || '';
-  document.getElementById('report-stars').textContent      = reportData.score  || '⭐⭐⭐';
-  document.getElementById('report-text').textContent       = reportData.report || '';
+
+  // Highlight product names in report text
+  var rawReport = reportData.report || '';
+  var highlightedReport = escHtml(rawReport);
+  cartItems.forEach(function(item) {
+    if (!item.name) return;
+    var esc = escHtml(item.name);
+    highlightedReport = highlightedReport.split(esc).join('<strong class="product-highlight">' + esc + '</strong>');
+  });
+  document.getElementById('report-text').innerHTML = highlightedReport;
 
   // Nutrition card
   const targets = { carbs: 150, protein: 50, fat: 50, vitamins: 20 };
   const labels  = { carbs: '🌾 פחמימות', protein: '💪 חלבונים', fat: '🥑 שומנים', vitamins: '🍊 ויטמינים' };
+  const colors  = { carbs: '#F7941D', protein: '#29ABE2', fat: '#8DC63F', vitamins: '#662D91' };
   const totals  = { carbs: 0, protein: 0, fat: 0, vitamins: 0 };
   cartItems.forEach(function(item) {
     totals.carbs    += Number(item.carbs)    || 0;
@@ -2129,17 +2138,20 @@ function showReport() {
   if (nutriGrid) {
     nutriGrid.innerHTML = '';
     ['carbs','protein','fat','vitamins'].forEach(function(key) {
-      const pct   = Math.min(totals[key] / targets[key], 1);
-      const stars = Math.max(1, Math.round(pct * 5));
-      const filled = '⭐'.repeat(stars);
-      const empty  = '☆'.repeat(5 - stars);
+      const pct = Math.min(totals[key] / targets[key], 1);
       const div = document.createElement('div');
       div.className = 'nutri-item';
       div.innerHTML =
         '<span class="nutri-item-label">' + labels[key] + '</span>' +
-        '<span class="nutri-item-stars">' + filled + empty + '</span>' +
+        '<div class="nutri-bar-track"><div class="nutri-bar-fill" style="width:0%; background:' + colors[key] + ';"></div></div>' +
         '<span class="nutri-item-val">' + totals[key] + 'g מתוך ' + targets[key] + 'g</span>';
       nutriGrid.appendChild(div);
+      // animate bar after paint
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          div.querySelector('.nutri-bar-fill').style.width = Math.round(pct * 100) + '%';
+        });
+      });
     });
     const missing = [];
     if (totals.carbs    < targets.carbs    * 0.3) missing.push('פחמימות');
@@ -2260,6 +2272,7 @@ async function sendEmail() {
 
     document.getElementById('email-success').classList.add('show');
     showToast('✅ המייל נשלח בהצלחה!', 'success');
+    if (sessionId) db.ref('sessions/' + sessionId).update({ reportDoneAt: Date.now() });
   } catch (err) {
     console.error('Email error:', err);
     btn.disabled = false;

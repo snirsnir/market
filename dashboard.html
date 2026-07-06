@@ -886,21 +886,21 @@
     const now       = Date.now();
     const fourHours = 4 * 60 * 60 * 1000;
 
-    /* filter: active only (created in last 4 hours, done sessions hide after 60s) */
+    /* filter: active only (created in last 4 hours, done sessions hide after 60s from reportDoneAt) */
     const active = Object.entries(sessions).filter(([id, s]) => {
       const created = s.createdAt || s.startTime || s.timestamp || 0;
       if ((now - created) >= fourHours) return false;
       if (s.status === 'done') {
-        const finished = s.finishedAt || 0;
-        return (now - finished) < CELEBRATION_MS;
+        if (!s.reportDoneAt) return true; // still on report screen — keep showing
+        return (now - s.reportDoneAt) < CELEBRATION_MS;
       }
       return true;
     });
 
-    /* detect done sessions → record fade start time */
+    /* detect done sessions → record fade start time from reportDoneAt */
     active.forEach(([id, s]) => {
-      if (s.status === 'done' && !celebrationStart[id]) {
-        celebrationStart[id] = s.finishedAt || now;
+      if (s.status === 'done' && s.reportDoneAt && !celebrationStart[id]) {
+        celebrationStart[id] = s.reportDoneAt;
       }
       prevStatus[id] = s.status;
     });
