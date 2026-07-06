@@ -1037,6 +1037,7 @@
     .nutri-bar-track { height: 10px; background: rgba(0,0,0,0.08); border-radius: 6px; overflow: hidden; }
     .nutri-bar-fill { height: 100%; border-radius: 6px; transition: width 0.9s cubic-bezier(0.34,1.2,0.64,1); }
     .nutri-item-val { font-size: 11px; color: #999; }
+    .nutri-item-status { font-size: 11px; font-weight: 800; border-radius: 6px; padding: 2px 7px; align-self: flex-start; }
     .product-highlight { font-weight: 800; color: #003d8f; background: rgba(0,61,143,0.08); border-radius: 4px; padding: 0 3px; }
 
     .report-intro {
@@ -1259,18 +1260,14 @@
           <tbody id="nutri-table-body"></tbody>
           <tfoot id="nutri-table-foot"></tfoot>
         </table>
-        <div class="balance-section" id="balance-section" style="display:none;">
-          <div class="balance-title">⚖️ האם הסל מאוזן?</div>
-          <div class="balance-grid" id="balance-grid"></div>
-          <div class="balance-verdict" id="balance-verdict"></div>
-        </div>
       </div>
 
-      <!-- Nutrition card -->
+      <!-- Nutrition card (merged with balance) -->
       <div class="report-card">
         <div class="report-card-title">📈 כרטיס תזונה אישי</div>
         <div class="nutri-grid" id="nutri-grid"></div>
         <div class="nutri-missing" id="nutri-missing" style="display:none;"></div>
+        <div class="balance-verdict" id="balance-verdict" style="display:none;margin-top:12px;"></div>
       </div>
 
       <!-- Recipe card -->
@@ -2204,42 +2201,7 @@ function showReport() {
   document.getElementById('nutri-table-heading').style.display = '';
   tbl.style.display = '';
 
-  // Balance indicators
-  const blabels = { carbs: '🌾 פחמימות', protein: '💪 חלבונים', fat: '🥑 שומנים', vitamins: '🍊 ויטמינים' };
-  function balanceStatus(val, target) {
-    const r = val / target;
-    if (r < 0.3)  return { icon:'❌', text:'נמוך מאוד', bg:'#fdecea', color:'#c62828' };
-    if (r < 0.6)  return { icon:'⚠️', text:'נמוך',      bg:'#fff8e1', color:'#e65100' };
-    if (r <= 1.3) return { icon:'✅', text:'מאוזן',     bg:'#e8f5e9', color:'#2e7d32' };
-    if (r <= 2.0) return { icon:'⚠️', text:'גבוה',      bg:'#fff8e1', color:'#e65100' };
-    return               { icon:'❌', text:'גבוה מאוד', bg:'#fdecea', color:'#c62828' };
-  }
-  const bgrid = document.getElementById('balance-grid');
-  bgrid.innerHTML = '';
-  let balancedCount = 0;
-  ['carbs','protein','fat','vitamins'].forEach(function(k) {
-    const s = balanceStatus(totTbl[k], tgts[k]);
-    if (s.text === 'מאוזן') balancedCount++;
-    bgrid.innerHTML +=
-      '<div class="balance-item" style="background:' + s.bg + ';">' +
-      '<span class="bi-icon">' + s.icon + '</span>' +
-      '<div><span class="bi-label">' + blabels[k] + '</span>' +
-      '<span style="color:' + s.color + ';">' + s.text + ' (' + totTbl[k] + 'g)</span></div></div>';
-  });
-  const verdict = document.getElementById('balance-verdict');
-  if (balancedCount === 4) {
-    verdict.style.cssText = 'background:#e8f5e9;color:#2e7d32;';
-    verdict.textContent = '✅ הסל שלכם מאוזן מצוין! כל קבוצות המזון מיוצגות יפה.';
-  } else if (balancedCount >= 2) {
-    verdict.style.cssText = 'background:#fff8e1;color:#e65100;';
-    verdict.textContent = '⚠️ הסל מאוזן חלקית — כדאי לחזק את הקטגוריות שבצהוב או אדום.';
-  } else {
-    verdict.style.cssText = 'background:#fdecea;color:#c62828;';
-    verdict.textContent = '❌ הסל לא מאוזן — כדאי להוסיף יותר מגוון לביקור הבא!';
-  }
-  document.getElementById('balance-section').style.display = '';
-
-  // Nutrition card
+  // Nutrition card — merged with balance
   const targets = { carbs: 150, protein: 50, fat: 50, vitamins: 20 };
   const labels  = { carbs: '🌾 פחמימות', protein: '💪 חלבונים', fat: '🥑 שומנים', vitamins: '🍊 ויטמינים' };
   const colors  = { carbs: '#F7941D', protein: '#29ABE2', fat: '#8DC63F', vitamins: '#662D91' };
@@ -2250,40 +2212,56 @@ function showReport() {
     totals.fat      += Number(item.fat)      || 0;
     totals.vitamins += Number(item.vitamins) || 0;
   });
+
+  function nutriStatus(val, target) {
+    const r = val / target;
+    if (r < 0.3)  return { text: 'נמוך מאוד', bg: '#fdecea', color: '#c62828' };
+    if (r < 0.6)  return { text: 'נמוך',      bg: '#fff8e1', color: '#e65100' };
+    if (r <= 1.3) return { text: 'תקין',      bg: '#e8f5e9', color: '#2e7d32' };
+    if (r <= 2.0) return { text: 'גבוה',      bg: '#fff8e1', color: '#e65100' };
+    return               { text: 'גבוה מאוד', bg: '#fdecea', color: '#c62828' };
+  }
+
   const nutriGrid = document.getElementById('nutri-grid');
+  let balancedCount = 0;
   if (nutriGrid) {
     nutriGrid.innerHTML = '';
     ['carbs','protein','fat','vitamins'].forEach(function(key) {
       const pct = Math.min(totals[key] / targets[key], 1);
+      const st  = nutriStatus(totals[key], targets[key]);
+      if (st.text === 'תקין') balancedCount++;
       const div = document.createElement('div');
       div.className = 'nutri-item';
       div.innerHTML =
         '<span class="nutri-item-label">' + labels[key] + '</span>' +
         '<div class="nutri-bar-track"><div class="nutri-bar-fill" style="width:0%; background:' + colors[key] + ';"></div></div>' +
-        '<span class="nutri-item-val">' + totals[key] + 'g מתוך ' + targets[key] + 'g</span>';
+        '<span class="nutri-item-val">' + totals[key] + 'g מתוך ' + targets[key] + 'g</span>' +
+        '<span class="nutri-item-status" style="background:' + st.bg + ';color:' + st.color + ';">' + st.text + '</span>';
       nutriGrid.appendChild(div);
-      // animate bar after paint
       requestAnimationFrame(function() {
         requestAnimationFrame(function() {
           div.querySelector('.nutri-bar-fill').style.width = Math.round(pct * 100) + '%';
         });
       });
     });
-    const missing = [];
-    if (totals.carbs    < targets.carbs    * 0.3) missing.push('פחמימות');
-    if (totals.protein  < targets.protein  * 0.3) missing.push('חלבונים');
-    if (totals.fat      < targets.fat      * 0.3) missing.push('שומנים');
-    if (totals.vitamins < targets.vitamins * 0.3) missing.push('ויטמינים');
-    const missingEl = document.getElementById('nutri-missing');
-    if (missingEl) {
-      if (missing.length > 0) {
-        missingEl.style.display = '';
-        missingEl.textContent = '💡 כדאי להוסיף יותר: ' + missing.join(', ');
-      } else {
-        missingEl.style.display = 'none';
-      }
+  }
+
+  // Verdict
+  const verdict = document.getElementById('balance-verdict');
+  if (verdict) {
+    verdict.style.display = '';
+    if (balancedCount === 4) {
+      verdict.style.cssText = 'display:;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;text-align:center;margin-top:12px;background:#e8f5e9;color:#2e7d32;';
+      verdict.textContent = '✅ הסל מאוזן — כל קבוצות המזון מיוצגות יפה!';
+    } else if (balancedCount >= 2) {
+      verdict.style.cssText = 'display:;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;text-align:center;margin-top:12px;background:#fff8e1;color:#e65100;';
+      verdict.textContent = '⚠️ הסל מאוזן חלקית — שווה לחזק את הקטגוריות הנמוכות.';
+    } else {
+      verdict.style.cssText = 'display:;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;text-align:center;margin-top:12px;background:#fdecea;color:#c62828;';
+      verdict.textContent = '❌ הסל לא מאוזן — כדאי להוסיף יותר מגוון לביקור הבא!';
     }
   }
+  document.getElementById('nutri-missing').style.display = 'none';
 
   // Recipe card
   if (reportData && reportData.recipe_name) {
