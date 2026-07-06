@@ -754,17 +754,22 @@
       fat     += Number(item.fat     || 0);
     });
 
+    var kcalCarbs   = carbs   * 4;
+    var kcalProtein = protein * 4;
+    var kcalFat     = fat     * 9;
+    var totalKcal   = kcalCarbs + kcalProtein + kcalFat || 1;
+
     var nutrients = [
-      { label: 'פחמימות', emoji: '🌾', val: carbs,   color: '#F7941D', max: 180 },
-      { label: 'חלבונים', emoji: '💪', val: protein, color: '#29ABE2', max: 120 },
-      { label: 'שומנים',  emoji: '🥑', val: fat,     color: '#8DC63F', max: 90  },
+      { label: 'פחמימות', emoji: '🌾', kcal: kcalCarbs,   color: '#F7941D' },
+      { label: 'חלבונים', emoji: '💪', kcal: kcalProtein, color: '#29ABE2' },
+      { label: 'שומנים',  emoji: '🥑', kcal: kcalFat,     color: '#8DC63F' },
     ];
 
     var wrap = document.createElement('div');
     wrap.className = 'nutrient-gauge-wrap';
 
     nutrients.forEach(function(n) {
-      var pct = Math.min(n.val / n.max * 100, 100);
+      var pct = Math.round(n.kcal / totalKcal * 100);
 
       var row = document.createElement('div');
       row.className = 'ng-row';
@@ -780,11 +785,11 @@
       fill.className = 'ng-fill';
       fill.style.width = pct + '%';
       fill.style.background = n.color;
-      fill.title = n.label + ': ' + Math.round(n.val) + 'g';
+      fill.title = n.label + ': ' + pct + '%';
 
       var valEl = document.createElement('span');
       valEl.className = 'ng-value';
-      valEl.textContent = Math.round(n.val) + 'g';
+      valEl.textContent = pct + '%';
 
       track.appendChild(fill);
       row.appendChild(icon);
