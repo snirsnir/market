@@ -181,42 +181,6 @@
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    /* celebration border */
-    .session-card.celebrating {
-      animation: slideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both,
-                 celebrationGlow 1.8s ease-in-out infinite;
-      background: #fff;
-      padding: 4px;
-    }
-    .session-card.celebrating::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 16px;
-      background: linear-gradient(
-        var(--angle, 0deg),
-        var(--blue), var(--green), var(--orange),
-        var(--pink), var(--purple), var(--red), var(--blue)
-      );
-      animation: rainbowBorder 2s linear infinite;
-      z-index: 0;
-    }
-    .session-card.celebrating > * { position: relative; z-index: 1; }
-
-    @property --angle {
-      syntax: '<angle>';
-      initial-value: 0deg;
-      inherits: false;
-    }
-    @keyframes rainbowBorder {
-      to { --angle: 360deg; }
-    }
-    @keyframes celebrationGlow {
-      0%, 100% { box-shadow: 0 0 20px rgba(41,171,226,0.6),  0 8px 32px rgba(0,0,0,0.5); transform: scale(1); }
-      25%       { box-shadow: 0 0 28px rgba(236,0,140,0.6),  0 8px 32px rgba(0,0,0,0.5); transform: scale(1.01); }
-      50%       { box-shadow: 0 0 28px rgba(141,198,63,0.7), 0 8px 32px rgba(0,0,0,0.5); transform: scale(1); }
-      75%       { box-shadow: 0 0 28px rgba(247,148,29,0.6), 0 8px 32px rgba(0,0,0,0.5); transform: scale(1.01); }
-    }
 
     /* ── Card Header ─────────────────────────────────────────────── */
     .card-header {
@@ -365,50 +329,15 @@
       font-size: 1.3rem;
       font-weight: 900;
       text-align: center;
-      animation: rainbowText 3s linear infinite;
+      color: var(--purple);
       letter-spacing: 0.5px;
-    }
-    @keyframes rainbowText {
-      0%   { color: var(--blue);   }
-      17%  { color: var(--green);  }
-      33%  { color: var(--orange); }
-      50%  { color: var(--pink);   }
-      67%  { color: var(--purple); }
-      83%  { color: var(--red);    }
-      100% { color: var(--blue);   }
     }
 
     .star-row {
       font-size: 1.3rem;
       letter-spacing: 3px;
-      animation: starSpin 2.5s ease-in-out infinite;
-    }
-    @keyframes starSpin {
-      0%, 100% { transform: rotate(-4deg); }
-      50%       { transform: rotate(4deg);  }
     }
 
-    /* ── Particles (celebration) ─────────────────────────────────── */
-    .particle-container {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      border-radius: 16px;
-      z-index: 5;
-    }
-    .particle {
-      position: absolute;
-      top: -10px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      animation: fall 2.5s linear infinite;
-    }
-    @keyframes fall {
-      0%   { transform: translateY(0) rotate(0deg);   opacity: 1; }
-      100% { transform: translateY(300px) rotate(720deg); opacity: 0; }
-    }
 
     /* ── Responsive tweaks ──────────────────────────────────────── */
     @media (max-width: 600px) {
@@ -557,30 +486,23 @@
     return '⭐'.repeat(Math.max(0, Math.min(r, 5)));
   }
 
-  function isCelebrating(sessionId) {
-    if (!celebrationStart[sessionId]) return false;
-    return (Date.now() - celebrationStart[sessionId]) < CELEBRATION_MS;
-  }
+  const fadeTimers = {};
 
-  /* ═══════════════════════════════════════════════════════════════
-     Particle helper (confetti on celebrating cards)
-  ═══════════════════════════════════════════════════════════════ */
-  const PARTICLE_COLORS = ['#29ABE2','#8DC63F','#F7941D','#EC008C','#662D91','#BE1E2D','#f0d000'];
-  function buildParticles() {
-    const container = document.createElement('div');
-    container.className = 'particle-container';
-    for (let i = 0; i < 14; i++) {
-      const p       = document.createElement('div');
-      p.className   = 'particle';
-      p.style.left  = `${Math.random() * 100}%`;
-      p.style.background = PARTICLE_COLORS[i % PARTICLE_COLORS.length];
-      p.style.animationDelay    = `${(Math.random() * 2.5).toFixed(2)}s`;
-      p.style.animationDuration = `${(1.8 + Math.random() * 1.5).toFixed(2)}s`;
-      p.style.width  = `${5 + Math.floor(Math.random() * 6)}px`;
-      p.style.height = p.style.width;
-      container.appendChild(p);
-    }
-    return container;
+  function startFade(sessionId, finishedAt) {
+    if (fadeTimers[sessionId]) return;
+    fadeTimers[sessionId] = setInterval(function() {
+      const elapsed = Date.now() - finishedAt;
+      const el = grid.querySelector('.session-card[data-sid="' + sessionId + '"]');
+      if (elapsed >= CELEBRATION_MS) {
+        clearInterval(fadeTimers[sessionId]);
+        delete fadeTimers[sessionId];
+        if (el) el.remove();
+        return;
+      }
+      if (el) {
+        el.style.opacity = Math.max(0, 1 - elapsed / CELEBRATION_MS).toFixed(3);
+      }
+    }, 1000);
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -592,15 +514,13 @@
     const name      = session.childName || session.name || 'מבקר';
     const aiTitle   = session.aiTitle   || '';
     const starRating = session.starRating != null ? session.starRating : null;
-    const celebrating = (status === 'done') && isCelebrating(sessionId);
-
     const card = document.createElement('div');
-    card.className   = 'session-card' + (celebrating ? ' celebrating' : '');
+    card.className   = 'session-card';
     card.dataset.sid = sessionId;
 
-    /* ── particles ── */
-    if (celebrating) {
-      card.appendChild(buildParticles());
+    if (status === 'done' && celebrationStart[sessionId]) {
+      const elapsed = Date.now() - celebrationStart[sessionId];
+      card.style.opacity = Math.max(0, 1 - elapsed / CELEBRATION_MS).toFixed(3);
     }
 
     /* ── header ── */
@@ -642,9 +562,9 @@
 
     /* ── body ── */
     const body = document.createElement('div');
-    body.className = (celebrating && aiTitle) ? 'celebration-content' : 'card-body';
+    body.className = (status === 'done' && aiTitle) ? 'celebration-content' : 'card-body';
 
-    if (celebrating && aiTitle) {
+    if (status === 'done' && aiTitle) {
       /* ── Celebration view ── */
       const titleEl = document.createElement('div');
       titleEl.className   = 'ai-title';
@@ -802,16 +722,23 @@
     const now       = Date.now();
     const fourHours = 4 * 60 * 60 * 1000;
 
-    /* filter: active only (created in last 4 hours) */
+    /* filter: active only (created in last 4 hours, done sessions hide after 60s) */
     const active = Object.entries(sessions).filter(([id, s]) => {
       const created = s.createdAt || s.startTime || s.timestamp || 0;
-      return (now - created) < fourHours;
+      if ((now - created) >= fourHours) return false;
+      if (s.status === 'done') {
+        const finished = s.finishedAt || 0;
+        return (now - finished) < CELEBRATION_MS;
+      }
+      return true;
     });
 
-    /* detect new "done" transitions → start celebration */
+    /* detect done sessions → start fade */
     active.forEach(([id, s]) => {
-      if (s.status === 'done' && prevStatus[id] !== 'done') {
-        celebrationStart[id] = now;
+      if (s.status === 'done' && !celebrationStart[id]) {
+        const finished = s.finishedAt || now;
+        celebrationStart[id] = finished;
+        startFade(id, finished);
       }
       prevStatus[id] = s.status;
     });
@@ -841,8 +768,11 @@
 
     /* upsert each session */
     active.forEach(([id, s], idx) => {
-      const newCard = buildCard(id, s);
       const existing = grid.querySelector(`.session-card[data-sid="${id}"]`);
+      /* Don't rebuild done cards — the fade timer updates opacity directly */
+      if (s.status === 'done' && existing) return;
+
+      const newCard = buildCard(id, s);
       if (existing) {
         /* replace in-place to preserve grid order */
         grid.replaceChild(newCard, existing);
