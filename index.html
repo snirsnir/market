@@ -1241,7 +1241,6 @@
   <div id="screen-analyzing" class="screen">
     <img class="analyzing-robot" src="technoda.png" alt="טכנודע" />
     <h2 class="analyzing-title">המערכת מנתחת את הסל שלך...</h2>
-    <p class="analyzing-subtitle">הבינה המלאכותית עובדת...</p>
     <div class="dots-row">
       <div class="dot"></div>
       <div class="dot"></div>
@@ -2413,19 +2412,22 @@ async function sendEmail() {
   const productList = cartItems.map(i => i.emoji + ' ' + i.name).join('\n');
 
   try {
-    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    const sendPromise = emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
       to_email:      email,
       child_name:    sessionName,
       ai_title:      reportData?.title  || '',
       ai_score:      reportData?.score  || '',
       ai_report:     reportData?.report || '',
-      recipe_name:    reportData?.recipe_name    || '',
-      recipe_steps:   reportData?.recipe_steps   || '',
-      next_challenge: reportData?.next_challenge || '',
-      daily_fact:     reportData?.daily_fact     || '',
+      recipe_name:   reportData?.recipe_name  || '',
+      recipe_steps:  reportData?.recipe_steps || '',
+      daily_fact:    reportData?.daily_fact   || '',
       products_list: productList,
       date:          new Date().toLocaleDateString('he-IL')
     });
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 15000)
+    );
+    await Promise.race([sendPromise, timeout]);
 
     document.getElementById('email-success').classList.add('show');
     showToast('✅ המייל נשלח בהצלחה!', 'success');
@@ -2434,7 +2436,7 @@ async function sendEmail() {
     console.error('Email error:', err);
     btn.disabled = false;
     btn.textContent = '✉️ שלח את הדו"ח';
-    showToast('❌ שגיאה בשליחת המייל', 'error');
+    showToast('❌ שגיאה בשליחת המייל — ' + (err?.text || err?.message || 'בדוק console'), 'error');
   }
 }
 </script>
