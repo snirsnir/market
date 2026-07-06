@@ -2227,7 +2227,7 @@ function showReport() {
     fat:     Math.round(cal.fat     / totalCal * 100)
   };
   // Vitamins: normalize separately (target 20 units as "full")
-  const vitPct = Math.min(Math.round(totals.vitamins / 20 * 100), 100);
+  const vitPct = Math.min(Math.round(totals.vitamins / 30 * 100), 100);
 
   // Ideal ranges (% of calories): carbs 45-65%, protein 10-30%, fat 20-35%
   function macroStatus(pct, low, high) {
