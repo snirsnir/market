@@ -1329,7 +1329,7 @@ const firebaseConfig = {
 const GROQ_API_KEY      = "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";
 const GROQ_MODEL        = "llama-3.3-70b-versatile";
 const TOGETHER_API_KEY  = "tgp_v1_IqjsL8etV1Eg0QX2bGGZVlGxTICk3GSUgXf1vJ-0Nx4";
-const TOGETHER_IMG_MODEL= "black-forest-labs/FLUX.1-schnell";
+const OPENAI_API_KEY    = "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";
 const EMAILJS_SERVICE = "service_7j1s4pl";
 const EMAILJS_TEMPLATE= "template_4jpm77j";
 const EMAILJS_PUBLIC_KEY = "Y0yqKFQQ4ONQ4j396";
@@ -1880,27 +1880,33 @@ async function generateMealImage(items) {
   ].sort(function(a,b){ return b.val - a.val; })[0];
 
   var styles = [
-    'cute kawaii illustration, thick outlines, vibrant pastel colors, clean white background',
-    'Pixar-style 3D render, smooth shiny surfaces, warm studio lighting, white background',
-    'children\'s book watercolor illustration, soft brushstrokes, bright colors, white background',
-    'bold vector flat design, bright solid colors, graphic style, white background',
-    'colorful cartoon illustration, fun and playful style, bright colors, white background'
+    'cute kawaii cartoon style, bright pastel colors, white background',
+    'Pixar 3D animation style, colorful and vibrant, white background',
+    'children\'s book illustration style, watercolor, soft and warm, white background',
+    'bold colorful flat design illustration, white background',
+    'fun cartoon illustration for kids, bright colors, white background'
   ];
   var style = styles[Math.floor(Math.random() * styles.length)];
 
   var names = items.map(function(i) { return i.name; }).join(', ');
   var prompt =
     style + '. ' +
-    'A beautiful arrangement of these specific food items: ' + names + '. ' +
-    'Each food item is clearly recognizable, detailed, colorful and appetizing. ' +
-    'All items visible and neatly arranged together. ' +
-    'No people, no text, no letters, no watermark, no extra objects. Only the listed foods.';
+    'A cheerful illustration showing exactly these food items together: ' + names + '. ' +
+    'Each food item is clearly identifiable, colorful, appetizing and beautifully arranged. ' +
+    'No text, no letters, no people, no extra objects. Only the food items listed.';
 
   try {
-    const resp = await fetch('https://api.together.xyz/v1/images/generations', {
+    const resp = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOGETHER_API_KEY },
-      body: JSON.stringify({ model: TOGETHER_IMG_MODEL, prompt: prompt, width: 768, height: 768, steps: 28, guidance_scale: 3.5, n: 1 })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_API_KEY },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: prompt,
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+        n: 1
+      })
     });
     if (!resp.ok) { const err = await resp.text(); console.warn('Image gen error:', resp.status, err); return null; }
     const data = await resp.json();
