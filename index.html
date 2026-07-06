@@ -1136,7 +1136,7 @@
     <!-- Sticky action bar -->
     <div class="cart-actions">
       <button class="btn-scan" id="btn-scan" onclick="openScanner()">📷 סרוק מוצר</button>
-      <button class="btn-finish" id="btn-finish" onclick="finishShopping()" disabled>חסרים עוד לפחות 7 מוצרים להרכבת הסל</button>
+      <button class="btn-finish" id="btn-finish" onclick="finishShopping()" disabled>עוד 7 מוצרים לסיום ⏳</button>
     </div>
   </div>
 
@@ -1596,7 +1596,7 @@ function updateCart() {
   else if (count >= MIN_ITEMS)  fill.classList.add('yellow');
 
   if (count < MIN_ITEMS) {
-    ptext.textContent = 'חסרים עוד ' + (MIN_ITEMS - count) + ' מוצרים להרכבת ארוחה';
+    ptext.textContent = 'חסרים עוד לפחות ' + (MIN_ITEMS - count) + ' מוצרים להרכבת הסל';
   } else if (count < MAX_ITEMS) {
     ptext.textContent = '✅ אפשר לסיים! עוד ' + (MAX_ITEMS - count) + ' מוצרים לסל מושלם';
   } else {
@@ -1636,7 +1636,7 @@ function updateCart() {
     const remaining = MIN_ITEMS - count;
     if (remaining > 0) {
       btnFinish.disabled    = true;
-      btnFinish.textContent = 'חסרים עוד לפחות ' + remaining + ' מוצרים להרכבת הסל';
+      btnFinish.textContent = 'עוד ' + remaining + ' מוצרים לסיום ⏳';
     } else {
       btnFinish.disabled    = false;
       btnFinish.textContent = '🤖 שלחו לניתוח AI';
