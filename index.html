@@ -1182,7 +1182,7 @@
   <div id="screen-report" class="screen">
     <div class="report-header">
       <div class="report-child-name" id="report-child-name"></div>
-      <div class="report-ai-title" id="report-ai-title">גיבור המדע</div>
+      <div class="report-ai-title" id="report-ai-title"></div>
       <div class="report-stars" id="report-stars">⭐⭐⭐</div>
     </div>
 
@@ -1222,6 +1222,7 @@
       <!-- AI Meal Image card -->
       <div class="report-card" id="meal-image-card">
         <div class="report-card-title">🎨 הארוחה שלכם בציור</div>
+        <div id="meal-recipe-hint" style="display:none; font-size:14px; font-weight:700; color:#662D91; text-align:right; margin-bottom:10px; padding: 8px 12px; background:#f8f0ff; border-radius:10px; border-right:3px solid #662D91;">🍳 מה אפשר להכין? <span id="meal-recipe-hint-name"></span></div>
         <div class="meal-image-wrap" id="meal-image-wrap">
           <div class="meal-image-loading">
             <span class="img-spinner">🎨</span>
@@ -1445,7 +1446,7 @@ window.onload = function () {
         } else if (session.status === 'done' && session.aiReport) {
           cartItems = session.items ? Object.values(session.items) : [];
           reportData = {
-            title:  session.aiTitle  || 'גיבור המדע',
+            title:  session.aiTitle  || '',
             score:  session.aiScore  || '⭐⭐⭐',
             report: session.aiReport
           };
@@ -1845,9 +1846,9 @@ async function generateMealImage(items) {
   var names = items.map(function(i) { return i.name; }).join(', ');
   var prompt =
     'A ' + style + ' for children. ' +
-    'A cheerful meal scene featuring: ' + names + '. ' +
-    'The scene conveys ' + dominant.theme + '. ' +
-    'White background, no text, no letters, food arranged beautifully, bright happy mood.';
+    'Show ONLY these exact food items clearly arranged together on a clean white background: ' + names + '. ' +
+    'Each item must be clearly recognizable, colorful and appetizing. ' +
+    'No people, no abstract symbols, no text, no letters. Only the listed foods beautifully displayed.';
 
   try {
     const resp = await fetch('https://api.together.xyz/v1/images/generations', {
@@ -2041,7 +2042,7 @@ ${productLines}
   // Fallback
   if (!result || !result.title || !result.report) {
     result = {
-      title:  'גיבור המדע',
+      title:  '',
       score:  '⭐⭐⭐',
       report: 'בחרת מוצרים מגוונים ומעניינים! הסל שלך מכיל מגוון קבוצות מזון שמספקות אנרגיה ומינרלים חשובים. כל בחירה שלך תורמת לגוף חזק ובריא. כל הכבוד על הרכבת הארוחה!'
     };
@@ -2066,7 +2067,7 @@ ${productLines}
 ══════════════════════════════════════════════════════════ */
 function showReport() {
   document.getElementById('report-child-name').textContent = 'הדו"ח של ' + sessionName;
-  document.getElementById('report-ai-title').textContent   = reportData.title  || 'גיבור המדע';
+  document.getElementById('report-ai-title').textContent   = reportData.title  || '';
   document.getElementById('report-stars').textContent      = reportData.score  || '⭐⭐⭐';
   document.getElementById('report-text').textContent       = reportData.report || '';
 
@@ -2121,6 +2122,12 @@ function showReport() {
       rn.textContent = reportData.recipe_name;
       rs.textContent = reportData.recipe_steps || '';
       rc.style.display = '';
+    }
+    const hint = document.getElementById('meal-recipe-hint');
+    const hintName = document.getElementById('meal-recipe-hint-name');
+    if (hint && hintName) {
+      hintName.textContent = reportData.recipe_name;
+      hint.style.display = '';
     }
   }
 
