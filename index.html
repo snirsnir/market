@@ -16,7 +16,7 @@
 
   <style>
     /* ─── Reset & Base ─────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Rubik', 'Segoe UI', Arial, sans-serif; }
 
     :root {
       --charcoal: #414042;
@@ -1298,12 +1298,6 @@
         <div class="recipe-steps" id="recipe-steps"></div>
       </div>
 
-      <!-- Next challenge card -->
-      <div class="report-card" id="challenge-card" style="display:none;">
-        <div class="report-card-title">🏆 האתגר לביקור הבא</div>
-        <div class="challenge-box" id="challenge-text"></div>
-      </div>
-
       <!-- Daily fact card -->
       <div class="report-card" id="fact-card" style="display:none;">
         <div class="report-card-title">🔬 עובדת המדע של היום</div>
@@ -1899,13 +1893,15 @@ function updateScanPopup(text) {
 
   if (text) {
     textEl.className = 'scan-popup-ai-text';
-    // Split into 2 sentences: announcement + fun fact
     var m = text.match(/^(.*?[.!?])\s+(.+)$/s);
     var line1 = m ? m[1] : text;
     var line2 = m ? m[2] : '';
-    var html = '<div class="sp-line1">' + escHtml(line1) + '</div>';
+    function toBold(s) {
+      return escHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong class="product-highlight">$1</strong>');
+    }
+    var html = '<div class="sp-line1">' + toBold(line1) + '</div>';
     if (line2) {
-      html += '<div class="sp-line2"><span class="sp-fact-label">💡 הידעת?</span> ' + escHtml(line2) + '</div>';
+      html += '<div class="sp-line2"><span class="sp-fact-label">💡 הידעת?</span> ' + toBold(line2) + '</div>';
     }
     textEl.innerHTML = html;
     aiBox.querySelector('.scan-popup-ai-icon').textContent = '✨';
@@ -1953,7 +1949,7 @@ async function generateMealImage(items) {
     'Bright warm lighting, rich colors, no text, no letters, no people.';
 
   try {
-    const resp = await fetch('https://weathered-bar-53ef.papasnir.workers.dev/', {
+    const resp = await fetch(OPENAI_WORKER + '/v1/images/generations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'gpt-image-1', prompt: prompt, size: '1024x1024', n: 1 })
@@ -1974,16 +1970,16 @@ async function generateMealImage(items) {
 }
 
 async function generateProductSummary(item) {
-  if (!item.aiFact) return '';
   const systemPrompt = 'אתה מדריך תזונה כיפי לילדים בני 10 במוזיאון מדע. תמיד עונה בעברית בלבד. כתוב קצר, קליל ומהנה.';
+  const extraFact = item.aiFact ? ' מידע נוסף על המוצר: ' + item.aiFact : '';
   const userPrompt =
     'ילדים הוסיפו את "' + item.name + '" לסל הקניות.' +
     ' כתוב בדיוק 2 משפטים בעברית:' +
-    ' משפט 1: התחל ב"הוספתם ' + item.name + ' לסל!" ואמוג\'י מתאים, ואז מה זה נותן לגוף (אנרגיה/שרירים/עצמות/ויטמינים).' +
-    ' משפט 2: עובדה תזונתית מפתיעה ומגניבה על המוצר מהמידע שלמטה.' +
-    ' רק 2 משפטים, ללא כותרת.' +
-    ' מידע: ' + item.aiFact;
+    ' משפט 1: התחל ישירות בשם המוצר "' + item.name + '" ואמוג\'י מתאים, ואז מה זה נותן לגוף (אנרגיה/שרירים/עצמות/ויטמינים). לדוגמה: "טוסט 🍞 מעניק לגוף פחמימות שנותנות אנרגיה לאורך כל היום!"' +
+    ' משפט 2: עובדה תזונתית מפתיעה ומגניבה על המוצר.' +
+    ' רק 2 משפטים, ללא כותרת.' + extraFact;
   try {
+    console.log('[AI popup] calling model:', OPENAI_CHAT_MODEL, 'for:', item.name);
     const resp = await fetch(OPENAI_WORKER + '/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1993,18 +1989,19 @@ async function generateProductSummary(item) {
           { role: 'system', content: systemPrompt },
           { role: 'user',   content: userPrompt }
         ],
-        max_tokens: 200,
+        max_completion_tokens: 200,
         temperature: 0.8
       })
     });
-    if (!resp.ok) {
-      console.warn('Groq API error:', resp.status);
-      return '';
-    }
-    const data = await resp.json();
-    return (data?.choices?.[0]?.message?.content || '').trim();
+    const rawText = await resp.text();
+    console.log('[AI popup] status:', resp.status, 'body:', rawText);
+    if (!resp.ok) return '';
+    const data = JSON.parse(rawText);
+    const content = (data?.choices?.[0]?.message?.content || '').trim();
+    console.log('[AI popup] content:', content);
+    return content;
   } catch(e) {
-    console.warn('Product summary error:', e);
+    console.warn('[AI popup] error:', e);
     return '';
   }
 }
@@ -2115,7 +2112,6 @@ ${productLines}
   "report": "כתוב 5-7 משפטים זורמים בגוף רבים (בחרתם, הרכבתם) בשפה קלילה ומהנה שפונה לילדים ולהוריהם. אל תשתמש בבולטים — רק טקסט רציף. השתמש במילה 'סל' ולא 'ארוחה'. הזכר לפחות 3-4 מוצרים ספציפיים מהסל עם מה שהם נותנים לגוף — סמן את שמות המוצרים ב-**כוכביים** כמו **תפוח**. הוסף דגשים תזונתיים חשובים. סיים במשפט עידוד חם.",
   "recipe_name": "שם מתכון אחד פשוט שאפשר להכין עם חלק מהמוצרים בסל",
   "recipe_steps": "שלבי הכנה ממוספרים (3-4 שלבים קצרים, הפרד שלבים ב-\n)",
-  "next_challenge": "אתגר אחד ספציפי וכיפי לביקור הבא בסופר של הטכנודע",
   "daily_fact": "עובדה מדעית מפתיעה אחת על אחד המוצרים בסל, לילדים"
 }`;
 
@@ -2135,7 +2131,7 @@ ${productLines}
             { role: 'user',   content: fullPrompt }
           ],
           temperature: 0.7,
-          max_tokens: 1200
+          max_completion_tokens: 1200
         })
       });
       if (response.status !== 429) break;
@@ -2369,15 +2365,6 @@ function showReport() {
     }
   }
 
-  // Challenge card
-  if (reportData && reportData.next_challenge) {
-    const cc = document.getElementById('challenge-card');
-    const ct = document.getElementById('challenge-text');
-    if (cc && ct) {
-      ct.textContent = reportData.next_challenge;
-      cc.style.display = '';
-    }
-  }
 
   // Daily fact card
   if (reportData && reportData.daily_fact) {
