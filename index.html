@@ -1971,8 +1971,8 @@ async function finishShopping() {
 
   showScreen('screen-analyzing');
 
-  // Update Firebase status
-  await db.ref('sessions/' + sessionId).update({ status: 'analyzing' });
+  // Mark session as done immediately so dashboard starts the 60s fade right away
+  await db.ref('sessions/' + sessionId).update({ status: 'done', finishedAt: Date.now() });
 
   // Fetch AI prompt from Firebase settings
   let basePrompt = 'אתה מומחה תזונה לילדים. נתח את הסל הבא וספק ניתוח תזונתי קצר, חיובי ועידודי בעברית.';
@@ -2050,13 +2050,11 @@ ${productLines}
 
   reportData = result;
 
-  // Save to Firebase
+  // Save AI results to Firebase (status/finishedAt already set at button press)
   await db.ref('sessions/' + sessionId).update({
-    aiTitle:    result.title,
-    aiScore:    result.score,
-    aiReport:   result.report,
-    status:     'done',
-    finishedAt: Date.now()
+    aiTitle:  result.title,
+    aiScore:  result.score,
+    aiReport: result.report,
   });
 
   showReport();

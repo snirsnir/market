@@ -486,24 +486,18 @@
     return '⭐'.repeat(Math.max(0, Math.min(r, 5)));
   }
 
-  const fadeTimers = {};
-
-  function startFade(sessionId, finishedAt) {
-    if (fadeTimers[sessionId]) return;
-    fadeTimers[sessionId] = setInterval(function() {
-      const elapsed = Date.now() - finishedAt;
-      const el = grid.querySelector('.session-card[data-sid="' + sessionId + '"]');
-      if (elapsed >= CELEBRATION_MS) {
-        clearInterval(fadeTimers[sessionId]);
-        delete fadeTimers[sessionId];
-        if (el) el.remove();
-        return;
-      }
-      if (el) {
-        el.style.opacity = Math.max(0, 1 - elapsed / CELEBRATION_MS).toFixed(3);
-      }
-    }, 1000);
-  }
+  /* 1-second ticker — smoothly fades all done cards currently in DOM */
+  setInterval(function() {
+    const now = Date.now();
+    grid.querySelectorAll('.session-card').forEach(function(el) {
+      const sid = el.dataset.sid;
+      if (!celebrationStart[sid]) return;
+      const elapsed = now - celebrationStart[sid];
+      el.style.opacity = elapsed >= CELEBRATION_MS
+        ? '0'
+        : Math.max(0, 1 - elapsed / CELEBRATION_MS).toFixed(3);
+    });
+  }, 1000);
 
   /* ═══════════════════════════════════════════════════════════════
      Build one card element
@@ -733,12 +727,10 @@
       return true;
     });
 
-    /* detect done sessions → start fade */
+    /* detect done sessions → record fade start time */
     active.forEach(([id, s]) => {
       if (s.status === 'done' && !celebrationStart[id]) {
-        const finished = s.finishedAt || now;
-        celebrationStart[id] = finished;
-        startFade(id, finished);
+        celebrationStart[id] = s.finishedAt || now;
       }
       prevStatus[id] = s.status;
     });
@@ -769,10 +761,13 @@
     /* upsert each session */
     active.forEach(([id, s], idx) => {
       const existing = grid.querySelector(`.session-card[data-sid="${id}"]`);
-      /* Don't rebuild done cards — the fade timer updates opacity directly */
-      if (s.status === 'done' && existing) return;
-
       const newCard = buildCard(id, s);
+
+      /* Preserve current fade opacity so rebuild doesn't flash to full */
+      if (existing && s.status === 'done' && existing.style.opacity) {
+        newCard.style.opacity = existing.style.opacity;
+      }
+
       if (existing) {
         /* replace in-place to preserve grid order */
         grid.replaceChild(newCard, existing);
