@@ -1392,8 +1392,8 @@ const firebaseConfig = {
   appId: "1:206448884373:web:5193af078826df8e15f99c",
   databaseURL: "https://market-ddfe6-default-rtdb.europe-west1.firebasedatabase.app/"
 };
-const GROQ_API_KEY      = "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";
-const GROQ_MODEL        = "llama-3.3-70b-versatile";
+const OPENAI_WORKER     = "https://weathered-bar-53ef.papasnir.workers.dev";
+const OPENAI_CHAT_MODEL = "gpt-4o-mini";
 const TOGETHER_API_KEY  = "tgp_v1_IqjsL8etV1Eg0QX2bGGZVlGxTICk3GSUgXf1vJ-0Nx4";
 const OPENAI_API_KEY    = "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";
 const EMAILJS_SERVICE = "service_7j1s4pl";
@@ -1984,11 +1984,11 @@ async function generateProductSummary(item) {
     ' רק 2 משפטים, ללא כותרת.' +
     ' מידע: ' + item.aiFact;
   try {
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const resp = await fetch(OPENAI_WORKER + '/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: OPENAI_CHAT_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user',   content: userPrompt }
@@ -2125,11 +2125,11 @@ ${productLines}
     let response;
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 4000));
-      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      response = await fetch(OPENAI_WORKER + '/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: GROQ_MODEL,
+          model: OPENAI_CHAT_MODEL,
           messages: [
             { role: 'system', content: 'אתה מומחה תזונה לילדים. תמיד עונה בעברית בלבד. ענה אך ורק ב-JSON תקני ללא markdown. אסור להכניס שורות חדשות אמיתיות בתוך ערכי מחרוזות JSON - השתמש תמיד ב-\\n.' },
             { role: 'user',   content: fullPrompt }
