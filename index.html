@@ -1393,7 +1393,7 @@ const firebaseConfig = {
   databaseURL: "https://market-ddfe6-default-rtdb.europe-west1.firebasedatabase.app/"
 };
 const OPENAI_WORKER     = "https://weathered-bar-53ef.papasnir.workers.dev";
-const OPENAI_CHAT_MODEL = "gpt-4o-mini";
+const OPENAI_CHAT_MODEL = "gpt-4.1-mini";
 const TOGETHER_API_KEY  = "tgp_v1_IqjsL8etV1Eg0QX2bGGZVlGxTICk3GSUgXf1vJ-0Nx4";
 const OPENAI_API_KEY    = "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";
 const EMAILJS_SERVICE = "service_7j1s4pl";
@@ -2348,7 +2348,8 @@ function showReport() {
       verdict.textContent = '❌ הסל לא מאוזן — נסו להוסיף מגוון רב יותר לביקור הבא!';
     }
   }
-  document.getElementById('nutri-missing').style.display = 'none';
+  const nutriMissing = document.getElementById('nutri-missing');
+  if (nutriMissing) nutriMissing.style.display = 'none';
 
   // Recipe card
   if (reportData && reportData.recipe_name) {
