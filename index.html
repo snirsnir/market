@@ -2203,11 +2203,10 @@ function showReport() {
   document.getElementById('nutri-table-heading').style.display = '';
   tbl.style.display = '';
 
-  // Nutrition card — merged with balance
-  const targets = { carbs: 150, protein: 50, fat: 50, vitamins: 20 };
-  const labels  = { carbs: '🌾 פחמימות', protein: '💪 חלבונים', fat: '🥑 שומנים', vitamins: '🍊 ויטמינים' };
-  const colors  = { carbs: '#F7941D', protein: '#29ABE2', fat: '#8DC63F', vitamins: '#662D91' };
-  const totals  = { carbs: 0, protein: 0, fat: 0, vitamins: 0 };
+  // Nutrition card — balance by proportion within the basket
+  const labels = { carbs: '🌾 פחמימות', protein: '💪 חלבונים', fat: '🥑 שומנים', vitamins: '🍊 ויטמינים' };
+  const colors = { carbs: '#F7941D', protein: '#29ABE2', fat: '#8DC63F', vitamins: '#662D91' };
+  const totals = { carbs: 0, protein: 0, fat: 0, vitamins: 0 };
   cartItems.forEach(function(item) {
     totals.carbs    += Number(item.carbs)    || 0;
     totals.protein  += Number(item.protein)  || 0;
@@ -2215,34 +2214,67 @@ function showReport() {
     totals.vitamins += Number(item.vitamins) || 0;
   });
 
-  function nutriStatus(val, target) {
-    const r = val / target;
-    if (r < 0.3)  return { text: 'נמוך מאוד', bg: '#fdecea', color: '#c62828' };
-    if (r < 0.6)  return { text: 'נמוך',      bg: '#fff8e1', color: '#e65100' };
-    if (r <= 1.3) return { text: 'תקין',      bg: '#e8f5e9', color: '#2e7d32' };
-    if (r <= 2.0) return { text: 'גבוה',      bg: '#fff8e1', color: '#e65100' };
-    return               { text: 'גבוה מאוד', bg: '#fdecea', color: '#c62828' };
+  // Caloric contribution: carbs & protein = 4 kcal/g, fat = 9 kcal/g
+  const cal = {
+    carbs:   totals.carbs   * 4,
+    protein: totals.protein * 4,
+    fat:     totals.fat     * 9
+  };
+  const totalCal = cal.carbs + cal.protein + cal.fat || 1;
+  const macroPct = {
+    carbs:   Math.round(cal.carbs   / totalCal * 100),
+    protein: Math.round(cal.protein / totalCal * 100),
+    fat:     Math.round(cal.fat     / totalCal * 100)
+  };
+  // Vitamins: normalize separately (target 20 units as "full")
+  const vitPct = Math.min(Math.round(totals.vitamins / 20 * 100), 100);
+
+  // Ideal ranges (% of calories): carbs 45-65%, protein 10-30%, fat 20-35%
+  function macroStatus(pct, low, high) {
+    if (pct < low  * 0.6) return { text: 'נמוך מאוד', bg: '#fdecea', color: '#c62828' };
+    if (pct < low)        return { text: 'נמוך',       bg: '#fff8e1', color: '#e65100' };
+    if (pct <= high)      return { text: 'מאוזן',      bg: '#e8f5e9', color: '#2e7d32' };
+    if (pct <= high * 1.4)return { text: 'גבוה',       bg: '#fff8e1', color: '#e65100' };
+    return                       { text: 'גבוה מאוד',  bg: '#fdecea', color: '#c62828' };
   }
+  function vitStatus(pct) {
+    if (pct < 20) return { text: 'נמוך מאוד', bg: '#fdecea', color: '#c62828' };
+    if (pct < 50) return { text: 'נמוך',       bg: '#fff8e1', color: '#e65100' };
+    return               { text: 'מאוזן',      bg: '#e8f5e9', color: '#2e7d32' };
+  }
+
+  const statuses = {
+    carbs:    macroStatus(macroPct.carbs,   45, 65),
+    protein:  macroStatus(macroPct.protein, 10, 30),
+    fat:      macroStatus(macroPct.fat,     20, 35),
+    vitamins: vitStatus(vitPct)
+  };
+  const displayPct = {
+    carbs:   macroPct.carbs   + '% מהקלוריות',
+    protein: macroPct.protein + '% מהקלוריות',
+    fat:     macroPct.fat     + '% מהקלוריות',
+    vitamins: totals.vitamins + ' יחידות'
+  };
 
   const nutriGrid = document.getElementById('nutri-grid');
   let balancedCount = 0;
   if (nutriGrid) {
     nutriGrid.innerHTML = '';
     ['carbs','protein','fat','vitamins'].forEach(function(key) {
-      const pct = Math.min(totals[key] / targets[key], 1);
-      const st  = nutriStatus(totals[key], targets[key]);
-      if (st.text === 'תקין') balancedCount++;
+      const barPct = key === 'vitamins' ? vitPct : Math.min(macroPct[key] / 65 * 100, 100);
+      const st = statuses[key];
+      if (st.text === 'מאוזן') balancedCount++;
       const div = document.createElement('div');
       div.className = 'nutri-item';
       div.innerHTML =
         '<span class="nutri-item-label">' + labels[key] + '</span>' +
         '<div class="nutri-bar-track"><div class="nutri-bar-fill" style="width:0%; background:' + colors[key] + ';"></div></div>' +
-        '<span class="nutri-item-val">' + totals[key] + 'g מתוך ' + targets[key] + 'g</span>' +
+        '<span class="nutri-item-val">' + displayPct[key] + '</span>' +
         '<span class="nutri-item-status" style="background:' + st.bg + ';color:' + st.color + ';">' + st.text + '</span>';
       nutriGrid.appendChild(div);
       requestAnimationFrame(function() {
         requestAnimationFrame(function() {
-          div.querySelector('.nutri-bar-fill').style.width = Math.round(pct * 100) + '%';
+          div.querySelector('.nutri-bar-fill').style.width = Math.round(barPct) + '%';
         });
       });
     });
@@ -2251,16 +2283,17 @@ function showReport() {
   // Verdict
   const verdict = document.getElementById('balance-verdict');
   if (verdict) {
+    const vs = 'border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;text-align:center;margin-top:12px;';
     verdict.style.display = '';
     if (balancedCount === 4) {
-      verdict.style.cssText = 'display:;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;text-align:center;margin-top:12px;background:#e8f5e9;color:#2e7d32;';
+      verdict.style.cssText = vs + 'background:#e8f5e9;color:#2e7d32;';
       verdict.textContent = '✅ הסל מאוזן — כל קבוצות המזון מיוצגות יפה!';
     } else if (balancedCount >= 2) {
-      verdict.style.cssText = 'display:;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;text-align:center;margin-top:12px;background:#fff8e1;color:#e65100;';
-      verdict.textContent = '⚠️ הסל מאוזן חלקית — שווה לחזק את הקטגוריות הנמוכות.';
+      verdict.style.cssText = vs + 'background:#fff8e1;color:#e65100;';
+      verdict.textContent = '⚠️ הסל מאוזן חלקית — כדאי לחזק את הקטגוריות הנמוכות.';
     } else {
-      verdict.style.cssText = 'display:;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;text-align:center;margin-top:12px;background:#fdecea;color:#c62828;';
-      verdict.textContent = '❌ הסל לא מאוזן — כדאי להוסיף יותר מגוון לביקור הבא!';
+      verdict.style.cssText = vs + 'background:#fdecea;color:#c62828;';
+      verdict.textContent = '❌ הסל לא מאוזן — נסו להוסיף מגוון רב יותר לביקור הבא!';
     }
   }
   document.getElementById('nutri-missing').style.display = 'none';
