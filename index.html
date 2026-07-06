@@ -1899,14 +1899,17 @@ async function generateMealImage(items) {
     const resp = await fetch('https://weathered-bar-53ef.papasnir.workers.dev/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'dall-e-2', prompt: prompt, size: '1024x1024', n: 1 })
+      body: JSON.stringify({ model: 'gpt-image-1', prompt: prompt, size: '1024x1024', n: 1 })
     });
     const text = await resp.text();
     console.log('Image gen response status:', resp.status);
-    console.log('Image gen response body:', text);
+    console.log('Image gen response body:', text.substring(0, 300));
     if (!resp.ok) { return null; }
     const data = JSON.parse(text);
-    return data?.data?.[0]?.url || null;
+    const item = data?.data?.[0];
+    if (item?.url)      return item.url;
+    if (item?.b64_json) return 'data:image/png;base64,' + item.b64_json;
+    return null;
   } catch(e) {
     console.warn('Image gen error:', e);
     return null;
