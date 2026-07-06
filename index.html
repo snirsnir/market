@@ -1039,6 +1039,22 @@
     .nutri-item-val { font-size: 11px; color: #999; }
     .product-highlight { font-weight: 800; color: #003d8f; background: rgba(0,61,143,0.08); border-radius: 4px; padding: 0 3px; }
 
+    .report-intro {
+      font-size: 16px; font-weight: 800; color: #003d8f;
+      margin-bottom: 8px; line-height: 1.4;
+    }
+    .nutri-table-heading {
+      font-size: 13px; font-weight: 800; color: #444;
+      margin: 16px 0 6px; text-align: right;
+      border-right: 3px solid #29ABE2; padding-right: 8px;
+    }
+    .balance-section { margin-top: 16px; }
+    .balance-title { font-size: 14px; font-weight: 800; color: #333; margin-bottom: 10px; }
+    .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .balance-item { border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+    .balance-item .bi-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .balance-item .bi-label { color: #555; font-size: 11px; font-weight: 700; display: block; }
+    .balance-verdict { border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 700; text-align: center; line-height: 1.5; }
     .nutri-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; }
     .nutri-table th { background: #f0f4ff; color: #003d8f; font-weight: 700; padding: 8px 10px; text-align: center; border-bottom: 2px solid #d0dcf7; }
     .nutri-table th:first-child { text-align: right; }
@@ -1227,7 +1243,9 @@
       <!-- AI analysis card -->
       <div class="report-card">
         <div class="report-card-title">📊 ניתוח תזונתי</div>
+        <div class="report-intro" id="report-intro"></div>
         <div class="report-text" id="report-text"></div>
+        <div class="nutri-table-heading" id="nutri-table-heading" style="display:none;">להלן טבלה מסכמת של הערכים התזונתיים של הסל שלכם</div>
         <table class="nutri-table" id="nutri-table" style="display:none;">
           <thead>
             <tr>
@@ -1241,6 +1259,11 @@
           <tbody id="nutri-table-body"></tbody>
           <tfoot id="nutri-table-foot"></tfoot>
         </table>
+        <div class="balance-section" id="balance-section" style="display:none;">
+          <div class="balance-title">⚖️ האם הסל מאוזן?</div>
+          <div class="balance-grid" id="balance-grid"></div>
+          <div class="balance-verdict" id="balance-verdict"></div>
+        </div>
       </div>
 
       <!-- Nutrition card -->
@@ -2071,7 +2094,7 @@ ${productLines}
 {
   "title": "כותרת מגניבה לילד (2-4 מילים)",
   "score": "דירוג בכוכבות (למשל ⭐⭐⭐⭐)",
-  "report": "2-3 משפטי פתיחה על הסל הכולל: רמת האיזון התזונתי, מה חזק בו ומה אפשר לשפר. עידוד חיובי לילד. ללא פירוט מוצרים ספציפיים.",
+  "report": "התחל במשפט: 'הסל שלכם מורכב מ-[X] מוצרים:' ואז ציין את שמות המוצרים. לאחר מכן 3-4 משפטים על הסל: מה קבוצות המזון שנבחרו, מה חזק בסל, מה חסר, ומשפט עידוד. כתוב בגוף שני לילדים.",
   "recipe_name": "שם מתכון אחד פשוט שאפשר להכין עם חלק מהמוצרים בסל",
   "recipe_steps": "שלבי הכנה ממוספרים (3-4 שלבים קצרים, הפרד שלבים ב-\n)",
   "next_challenge": "אתגר אחד ספציפי וכיפי לביקור הבא בסופר של הטכנודע",
@@ -2147,8 +2170,9 @@ function showReport() {
   document.getElementById('report-child-name').textContent = 'הדו"ח של ' + sessionName;
   document.getElementById('report-ai-title').textContent   = reportData.title  || '';
 
-  // Opening paragraph
-  document.getElementById('report-text').textContent = reportData.report || '';
+  // Header + AI summary
+  document.getElementById('report-intro').textContent = '🎉 כל הכבוד! סיימתם להכין את הסל.';
+  document.getElementById('report-text').textContent  = reportData.report || '';
 
   // Nutrition table
   const tbl     = document.getElementById('nutri-table');
@@ -2177,7 +2201,43 @@ function showReport() {
     ['carbs','protein','fat','vitamins'].map(function(k) {
       return '<td><strong>' + totTbl[k] + 'g</strong></td>';
     }).join('') + '</tr>';
+  document.getElementById('nutri-table-heading').style.display = '';
   tbl.style.display = '';
+
+  // Balance indicators
+  const blabels = { carbs: '🌾 פחמימות', protein: '💪 חלבונים', fat: '🥑 שומנים', vitamins: '🍊 ויטמינים' };
+  function balanceStatus(val, target) {
+    const r = val / target;
+    if (r < 0.3)  return { icon:'❌', text:'נמוך מאוד', bg:'#fdecea', color:'#c62828' };
+    if (r < 0.6)  return { icon:'⚠️', text:'נמוך',      bg:'#fff8e1', color:'#e65100' };
+    if (r <= 1.3) return { icon:'✅', text:'מאוזן',     bg:'#e8f5e9', color:'#2e7d32' };
+    if (r <= 2.0) return { icon:'⚠️', text:'גבוה',      bg:'#fff8e1', color:'#e65100' };
+    return               { icon:'❌', text:'גבוה מאוד', bg:'#fdecea', color:'#c62828' };
+  }
+  const bgrid = document.getElementById('balance-grid');
+  bgrid.innerHTML = '';
+  let balancedCount = 0;
+  ['carbs','protein','fat','vitamins'].forEach(function(k) {
+    const s = balanceStatus(totTbl[k], tgts[k]);
+    if (s.text === 'מאוזן') balancedCount++;
+    bgrid.innerHTML +=
+      '<div class="balance-item" style="background:' + s.bg + ';">' +
+      '<span class="bi-icon">' + s.icon + '</span>' +
+      '<div><span class="bi-label">' + blabels[k] + '</span>' +
+      '<span style="color:' + s.color + ';">' + s.text + ' (' + totTbl[k] + 'g)</span></div></div>';
+  });
+  const verdict = document.getElementById('balance-verdict');
+  if (balancedCount === 4) {
+    verdict.style.cssText = 'background:#e8f5e9;color:#2e7d32;';
+    verdict.textContent = '✅ הסל שלכם מאוזן מצוין! כל קבוצות המזון מיוצגות יפה.';
+  } else if (balancedCount >= 2) {
+    verdict.style.cssText = 'background:#fff8e1;color:#e65100;';
+    verdict.textContent = '⚠️ הסל מאוזן חלקית — כדאי לחזק את הקטגוריות שבצהוב או אדום.';
+  } else {
+    verdict.style.cssText = 'background:#fdecea;color:#c62828;';
+    verdict.textContent = '❌ הסל לא מאוזן — כדאי להוסיף יותר מגוון לביקור הבא!';
+  }
+  document.getElementById('balance-section').style.display = '';
 
   // Nutrition card
   const targets = { carbs: 150, protein: 50, fat: 50, vitamins: 20 };
