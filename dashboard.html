@@ -139,7 +139,9 @@
       /* columns/rows set dynamically by JS to fill screen */
       grid-template-columns: 1fr;
       grid-template-rows: 1fr;
-      transition: grid-template-columns 0.45s ease, grid-template-rows 0.45s ease;
+      transition: grid-template-columns 0.5s cubic-bezier(0.34, 1.2, 0.64, 1),
+                  grid-template-rows    0.5s cubic-bezier(0.34, 1.2, 0.64, 1),
+                  font-size             0.5s ease;
     }
 
     /* ── Empty State ─────────────────────────────────────────────── */
@@ -179,14 +181,30 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
-      animation: slideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation: bubbleIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
       position: relative;
-      transition: box-shadow 0.4s, transform 0.3s;
+      transition: box-shadow 0.4s;
+      transform-origin: center center;
     }
 
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(30px) scale(0.95); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
+    /* Pop in — elastic bubble */
+    @keyframes bubbleIn {
+      0%   { opacity: 0; transform: scale(0.15); filter: blur(6px); }
+      55%  { opacity: 1; transform: scale(1.08); filter: blur(0); }
+      75%  { transform: scale(0.96); }
+      90%  { transform: scale(1.03); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Pop out — deflate & shrink */
+    .session-card.bubble-out {
+      animation: bubbleOut 0.45s cubic-bezier(0.4, 0, 0.8, 0.6) forwards !important;
+      pointer-events: none;
+    }
+    @keyframes bubbleOut {
+      0%   { opacity: 1; transform: scale(1);    filter: blur(0);   }
+      20%  { opacity: 1; transform: scale(1.06); filter: blur(0);   }
+      100% { opacity: 0; transform: scale(0.1);  filter: blur(8px); }
     }
 
 
@@ -569,19 +587,20 @@
     return '⭐'.repeat(Math.max(0, Math.min(r, 5)));
   }
 
-  /* 1-second ticker — smoothly fades all done cards currently in DOM */
+  /* 1-second ticker — smoothly fades + deflates done cards */
   setInterval(function() {
     const now = Date.now();
     grid.querySelectorAll('.session-card').forEach(function(el) {
       const sid = el.dataset.sid;
       if (!celebrationStart[sid]) return;
-      const elapsed = now - celebrationStart[sid];
-      if (elapsed >= CELEBRATION_MS) {
-        el.style.opacity = '0';
-        el.style.pointerEvents = 'none';
-      } else {
-        el.style.opacity = Math.max(0, 1 - elapsed / CELEBRATION_MS).toFixed(3);
-      }
+      const elapsed  = now - celebrationStart[sid];
+      const progress = Math.min(1, elapsed / CELEBRATION_MS);
+      const opacity  = Math.max(0, 1 - progress);
+      // Gentle deflation: scale eases from 1 → 0.85 over the 60 seconds
+      const scale    = (1 - progress * 0.15).toFixed(3);
+      el.style.opacity   = opacity.toFixed(3);
+      el.style.transform = `scale(${scale})`;
+      if (progress >= 1) el.style.pointerEvents = 'none';
     });
   }, 1000);
 
@@ -834,10 +853,9 @@
   const grid       = document.getElementById('cards-grid');
   const emptyState = document.getElementById('empty-state');
 
-  // Track previously-known session IDs for slide-in detection
-  let knownIds = new Set();
-  // Track which sessions were 'done' before so we can detect transition
-  let prevStatus = {};
+  let knownIds      = new Set();
+  let prevStatus    = {};
+  const bubblingOut = new Set(); // IDs currently playing bubble-out animation
 
   function renderSessions(sessions) {
     const now       = Date.now();
@@ -880,9 +898,17 @@
       existingCards[el.dataset.sid] = el;
     });
 
-    /* remove gone sessions */
+    /* remove gone sessions — play bubble-out then remove from DOM */
     Object.keys(existingCards).forEach(id => {
-      if (!currentIds.has(id)) existingCards[id].remove();
+      if (!currentIds.has(id) && !bubblingOut.has(id)) {
+        bubblingOut.add(id);
+        const el = existingCards[id];
+        el.classList.add('bubble-out');
+        setTimeout(() => {
+          bubblingOut.delete(id);
+          if (el.parentNode) { el.remove(); updateGridLayout(); }
+        }, 450);
+      }
     });
 
     /* upsert each session */
@@ -890,9 +916,10 @@
       const existing = grid.querySelector(`.session-card[data-sid="${id}"]`);
       const newCard = buildCard(id, s);
 
-      /* Preserve current fade opacity so rebuild doesn't flash to full */
-      if (existing && s.status === 'done' && existing.style.opacity) {
-        newCard.style.opacity = existing.style.opacity;
+      /* Preserve current fade state so rebuild doesn't flash to full */
+      if (existing && s.status === 'done') {
+        if (existing.style.opacity)   newCard.style.opacity   = existing.style.opacity;
+        if (existing.style.transform) newCard.style.transform = existing.style.transform;
       }
 
       if (existing) {
