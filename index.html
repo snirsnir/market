@@ -1031,7 +1031,23 @@
     .scan-popup-btn:active { transform: scale(0.97); }
 
     /* ─── Report extras ─────────────────────────────── */
-    .nutri-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+    .nutri-pie-row { display: flex; gap: 16px; align-items: center; margin-top: 8px; }
+    .nutri-donut-wrap { position: relative; flex-shrink: 0; }
+    .nutri-donut {
+      width: 120px; height: 120px; border-radius: 50%; position: relative;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    .nutri-donut::after {
+      content: ''; position: absolute; width: 52%; height: 52%;
+      background: #fff; border-radius: 50%;
+      top: 50%; left: 50%; transform: translate(-50%,-50%);
+      box-shadow: inset 0 0 0 1.5px rgba(0,0,0,0.06);
+    }
+    .nutri-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; flex-wrap: wrap; }
+    .legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .legend-name { font-weight: 700; color: #444; flex: 1; min-width: 60px; }
+    .legend-pct { font-weight: 800; color: #222; font-size: 13px; }
     .nutri-item { background: #f8f9ff; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
     .nutri-item-label { font-size: 12px; font-weight: 700; color: #555; }
     .nutri-bar-track { height: 10px; background: rgba(0,0,0,0.08); border-radius: 6px; overflow: hidden; }
@@ -1265,8 +1281,13 @@
       <!-- Nutrition card (merged with balance) -->
       <div class="report-card">
         <div class="report-card-title">📈 כרטיס תזונה אישי</div>
-        <div class="nutri-grid" id="nutri-grid"></div>
-        <div class="nutri-missing" id="nutri-missing" style="display:none;"></div>
+        <div class="nutri-pie-row">
+          <div class="nutri-donut-wrap">
+            <div class="nutri-donut" id="nutri-donut"></div>
+          </div>
+          <div class="nutri-legend" id="nutri-legend"></div>
+        </div>
+        <div id="nutri-vit-row" style="margin-top:12px;"></div>
         <div class="balance-verdict" id="balance-verdict" style="display:none;margin-top:12px;"></div>
       </div>
 
@@ -2256,26 +2277,52 @@ function showReport() {
     vitamins: totals.vitamins + ' יחידות'
   };
 
-  const nutriGrid = document.getElementById('nutri-grid');
+  // Donut chart for carbs / protein / fat
+  const a1 = Math.round(macroPct.carbs   / 100 * 360);
+  const a2 = a1 + Math.round(macroPct.protein / 100 * 360);
+  const donut = document.getElementById('nutri-donut');
+  if (donut) {
+    donut.style.background =
+      'conic-gradient(' +
+      colors.carbs   + ' 0deg ' + a1  + 'deg,' +
+      colors.protein + ' ' + a1 + 'deg ' + a2 + 'deg,' +
+      colors.fat     + ' ' + a2 + 'deg 360deg)';
+  }
+
+  // Legend next to donut
   let balancedCount = 0;
-  if (nutriGrid) {
-    nutriGrid.innerHTML = '';
-    ['carbs','protein','fat','vitamins'].forEach(function(key) {
-      const barPct = key === 'vitamins' ? vitPct : Math.min(macroPct[key] / 65 * 100, 100);
-      const st = statuses[key];
+  const legend = document.getElementById('nutri-legend');
+  if (legend) {
+    legend.innerHTML = '';
+    [['carbs','פחמימות'],['protein','חלבונים'],['fat','שומנים']].forEach(function(pair) {
+      const key = pair[0];
+      const st  = statuses[key];
       if (st.text === 'מאוזן') balancedCount++;
-      const div = document.createElement('div');
-      div.className = 'nutri-item';
-      div.innerHTML =
-        '<span class="nutri-item-label">' + labels[key] + '</span>' +
-        '<div class="nutri-bar-track"><div class="nutri-bar-fill" style="width:0%; background:' + colors[key] + ';"></div></div>' +
-        '<span class="nutri-item-val">' + displayPct[key] + '</span>' +
-        '<span class="nutri-item-status" style="background:' + st.bg + ';color:' + st.color + ';">' + st.text + '</span>';
-      nutriGrid.appendChild(div);
+      legend.innerHTML +=
+        '<div class="legend-item">' +
+        '<span class="legend-dot" style="background:' + colors[key] + ';"></span>' +
+        '<span class="legend-name">' + labels[key] + '</span>' +
+        '<span class="legend-pct">' + macroPct[key] + '% מהסל</span>' +
+        '<span class="nutri-item-status" style="background:' + st.bg + ';color:' + st.color + ';">' + st.text + '</span>' +
+        '</div>';
+    });
+  }
+
+  // Vitamins bar below donut
+  const vitSt  = statuses.vitamins;
+  if (vitSt.text === 'מאוזן') balancedCount++;
+  const vitRow = document.getElementById('nutri-vit-row');
+  if (vitRow) {
+    vitRow.innerHTML =
+      '<div class="nutri-item">' +
+      '<span class="nutri-item-label">' + labels.vitamins + '</span>' +
+      '<div class="nutri-bar-track"><div class="nutri-bar-fill" style="width:0%;background:' + colors.vitamins + ';"></div></div>' +
+      '<span class="nutri-item-val">' + totals.vitamins + ' יחידות</span>' +
+      '<span class="nutri-item-status" style="background:' + vitSt.bg + ';color:' + vitSt.color + ';">' + vitSt.text + '</span>' +
+      '</div>';
+    requestAnimationFrame(function() {
       requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-          div.querySelector('.nutri-bar-fill').style.width = Math.round(barPct) + '%';
-        });
+        vitRow.querySelector('.nutri-bar-fill').style.width = vitPct + '%';
       });
     });
   }
