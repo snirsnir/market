@@ -1925,28 +1925,11 @@ function playBeep() {
   } catch(e) {}
 }
 
-async function generateMealImage(items) {
-  // Build nutritional story
-  var totCarbs = 0, totProtein = 0, totFat = 0, totVit = 0;
-  items.forEach(function(i) {
-    totCarbs   += Number(i.carbs)    || 0;
-    totProtein += Number(i.protein)  || 0;
-    totFat     += Number(i.fat)      || 0;
-    totVit     += Number(i.vitamins) || 0;
-  });
-  var dominant = [
-    { key: 'carbs',    val: totCarbs,   theme: 'glowing energy bolts and lightning, a running child full of power' },
-    { key: 'protein',  val: totProtein, theme: 'strong muscles, a flexing superhero kid, growth and strength' },
-    { key: 'fat',      val: totFat,     theme: 'a glowing brain, smart ideas, light bulbs, brainpower' },
-    { key: 'vitamins', val: totVit,     theme: 'colorful vitamins sparkling, a healthy glowing body, rainbow of health' }
-  ].sort(function(a,b){ return b.val - a.val; })[0];
-
-  var names = items.map(function(i) { return i.name; }).join(', ');
+async function generateMealImage(recipeName) {
   var prompt =
-    'A beautiful top-down food photography illustration for children, colorful and appetizing. ' +
-    'The following food items are creatively and naturally arranged together: ' + names + '. ' +
-    'Some items can be on a plate, some beside it — let the composition feel natural and inviting, like a real meal scene. ' +
-    'Bright warm lighting, rich colors, no text, no letters, no people.';
+    'A beautiful, colorful food illustration for children of the prepared dish: "' + recipeName + '". ' +
+    'Show the finished, plated meal — ready to eat, appetizing and inviting. ' +
+    'Top-down or slight angle view, bright warm lighting, rich vivid colors, no text, no letters, no people.';
 
   try {
     const resp = await fetch(OPENAI_WORKER + '/v1/images/generations', {
@@ -2393,8 +2376,8 @@ function showReport() {
 
   showScreen('screen-report');
 
-  // Generate meal image — Pollinations returns URL immediately, image loads async
-  generateMealImage(cartItems).then(function(url) {
+  // Generate meal image based on the AI-suggested recipe name
+  generateMealImage(reportData.recipe_name || cartItems.map(function(i){return i.name;}).join(', ')).then(function(url) {
     const wrap = document.getElementById('meal-image-wrap');
     if (!wrap) return;
     if (!url) { wrap.innerHTML = '<div class="meal-image-loading">😔 לא הצלחנו לייצר את הציור הפעם</div>'; return; }
