@@ -1318,6 +1318,22 @@ let cartItems   = [];  // [{ barcode, name, emoji, carbs, protein, fat, vitamins
 let selectedAvatar = null;
 let selectedTheme  = null;
 let qrScanner   = null;
+
+/* ── iOS Audio Unlock ─────────────────────────────────────────────
+   iOS blocks audio unless triggered inside a user gesture.
+   We pre-load the beep and unlock it on the first touch/click,
+   so it can play freely afterwards (e.g. from QR scan callbacks). */
+var _beepAudio = new Audio('peep.mp3');
+_beepAudio.volume = 0.7;
+_beepAudio.load();
+function _unlockBeep() {
+  var p = _beepAudio.play();
+  if (p) p.then(function() { _beepAudio.pause(); _beepAudio.currentTime = 0; }).catch(function(){});
+  document.removeEventListener('touchstart', _unlockBeep);
+  document.removeEventListener('click',      _unlockBeep);
+}
+document.addEventListener('touchstart', _unlockBeep, { passive: true });
+document.addEventListener('click',      _unlockBeep);
 let scannerActive = false;
 let reportData  = null;
 
@@ -1811,9 +1827,8 @@ function closeScanPopup() {
 
 function playBeep() {
   try {
-    var audio = new Audio('peep.mp3');
-    audio.volume = 0.7;
-    audio.play().catch(function() {});
+    _beepAudio.currentTime = 0;
+    _beepAudio.play().catch(function() {});
   } catch(e) {}
 }
 
