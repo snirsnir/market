@@ -1038,6 +1038,18 @@
     .nutri-bar-fill { height: 100%; border-radius: 6px; transition: width 0.9s cubic-bezier(0.34,1.2,0.64,1); }
     .nutri-item-val { font-size: 11px; color: #999; }
     .product-highlight { font-weight: 800; color: #003d8f; background: rgba(0,61,143,0.08); border-radius: 4px; padding: 0 3px; }
+
+    .nutri-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; }
+    .nutri-table th { background: #f0f4ff; color: #003d8f; font-weight: 700; padding: 8px 10px; text-align: center; border-bottom: 2px solid #d0dcf7; }
+    .nutri-table th:first-child { text-align: right; }
+    .nutri-table td { padding: 8px 10px; text-align: center; border-bottom: 1px solid #f0f0f0; color: #333; vertical-align: middle; }
+    .nutri-table td:first-child { text-align: right; font-weight: 700; }
+    .nutri-table tr:last-child td { border-bottom: none; }
+    .nutri-table tr:nth-child(even) td { background: #fafbff; }
+    .nutri-table .cell-bar { display: flex; align-items: center; gap: 6px; justify-content: center; }
+    .nutri-table .mini-bar { flex: 1; height: 7px; background: #eee; border-radius: 4px; overflow: hidden; max-width: 50px; }
+    .nutri-table .mini-bar-fill { height: 100%; border-radius: 4px; }
+    .nutri-table tfoot td { background: #f0f4ff; font-weight: 800; color: #003d8f; border-top: 2px solid #d0dcf7; }
     .nutri-missing { margin-top: 10px; padding: 10px 14px; background: #fff8e6; border-radius: 10px; border-right: 3px solid #F7941D; font-size: 13px; color: #7a4a00; }
 
     .recipe-name { font-size: 16px; font-weight: 800; color: #003d8f; margin-bottom: 10px; }
@@ -1216,6 +1228,19 @@
       <div class="report-card">
         <div class="report-card-title">📊 ניתוח תזונתי</div>
         <div class="report-text" id="report-text"></div>
+        <table class="nutri-table" id="nutri-table" style="display:none;">
+          <thead>
+            <tr>
+              <th>מוצר</th>
+              <th>🌾 פחמימות</th>
+              <th>💪 חלבונים</th>
+              <th>🥑 שומנים</th>
+              <th>🍊 ויטמינים</th>
+            </tr>
+          </thead>
+          <tbody id="nutri-table-body"></tbody>
+          <tfoot id="nutri-table-foot"></tfoot>
+        </table>
       </div>
 
       <!-- Nutrition card -->
@@ -1879,21 +1904,12 @@ async function generateMealImage(items) {
     { key: 'vitamins', val: totVit,     theme: 'colorful vitamins sparkling, a healthy glowing body, rainbow of health' }
   ].sort(function(a,b){ return b.val - a.val; })[0];
 
-  var styles = [
-    'cute kawaii cartoon style, bright pastel colors, white background',
-    'Pixar 3D animation style, colorful and vibrant, white background',
-    'children\'s book illustration style, watercolor, soft and warm, white background',
-    'bold colorful flat design illustration, white background',
-    'fun cartoon illustration for kids, bright colors, white background'
-  ];
-  var style = styles[Math.floor(Math.random() * styles.length)];
-
   var names = items.map(function(i) { return i.name; }).join(', ');
   var prompt =
-    style + '. ' +
-    'A cheerful illustration showing exactly these food items together: ' + names + '. ' +
-    'Each food item is clearly identifiable, colorful, appetizing and beautifully arranged. ' +
-    'No text, no letters, no people, no extra objects. Only the food items listed.';
+    'A beautiful top-down food photography illustration for children, colorful and appetizing. ' +
+    'The following food items are creatively and naturally arranged together: ' + names + '. ' +
+    'Some items can be on a plate, some beside it — let the composition feel natural and inviting, like a real meal scene. ' +
+    'Bright warm lighting, rich colors, no text, no letters, no people.';
 
   try {
     const resp = await fetch('https://weathered-bar-53ef.papasnir.workers.dev/', {
@@ -2055,7 +2071,7 @@ ${productLines}
 {
   "title": "כותרת מגניבה לילד (2-4 מילים)",
   "score": "דירוג בכוכבות (למשל ⭐⭐⭐⭐)",
-  "report": "ניתוח פרטני לכל מוצר בסל. עבור כל מוצר: שמו + אמוג'י + מה הוא נותן לגוף (חיובי) + נקודה אחת לשיפור אם רלוונטי. הפרד כל מוצר ב-\n. לסיום: משפט עידוד כללי אחד.",
+  "report": "2-3 משפטי פתיחה על הסל הכולל: רמת האיזון התזונתי, מה חזק בו ומה אפשר לשפר. עידוד חיובי לילד. ללא פירוט מוצרים ספציפיים.",
   "recipe_name": "שם מתכון אחד פשוט שאפשר להכין עם חלק מהמוצרים בסל",
   "recipe_steps": "שלבי הכנה ממוספרים (3-4 שלבים קצרים, הפרד שלבים ב-\n)",
   "next_challenge": "אתגר אחד ספציפי וכיפי לביקור הבא בסופר של הטכנודע",
@@ -2131,15 +2147,37 @@ function showReport() {
   document.getElementById('report-child-name').textContent = 'הדו"ח של ' + sessionName;
   document.getElementById('report-ai-title').textContent   = reportData.title  || '';
 
-  // Highlight product names in report text
-  var rawReport = reportData.report || '';
-  var highlightedReport = escHtml(rawReport);
+  // Opening paragraph
+  document.getElementById('report-text').textContent = reportData.report || '';
+
+  // Nutrition table
+  const tbl     = document.getElementById('nutri-table');
+  const tbody   = document.getElementById('nutri-table-body');
+  const tfoot   = document.getElementById('nutri-table-foot');
+  const tgts    = { carbs: 150, protein: 50, fat: 50, vitamins: 20 };
+  const tcols   = { carbs: '#F7941D', protein: '#29ABE2', fat: '#8DC63F', vitamins: '#662D91' };
+  const totTbl  = { carbs: 0, protein: 0, fat: 0, vitamins: 0 };
+  tbody.innerHTML = '';
   cartItems.forEach(function(item) {
-    if (!item.name) return;
-    var esc = escHtml(item.name);
-    highlightedReport = highlightedReport.split(esc).join('<strong class="product-highlight">' + esc + '</strong>');
+    const c = Number(item.carbs)||0, p = Number(item.protein)||0,
+          f = Number(item.fat)||0,   v = Number(item.vitamins)||0;
+    totTbl.carbs += c; totTbl.protein += p; totTbl.fat += f; totTbl.vitamins += v;
+    function cell(val, key) {
+      const pct = Math.min(val / tgts[key], 1);
+      return '<td><div class="cell-bar">' + val + 'g' +
+        '<div class="mini-bar"><div class="mini-bar-fill" style="width:' + Math.round(pct*100) + '%;background:' + tcols[key] + ';"></div></div>' +
+        '</div></td>';
+    }
+    tbody.innerHTML +=
+      '<tr><td>' + (item.emoji||'📦') + ' ' + escHtml(item.name) + '</td>' +
+      cell(c,'carbs') + cell(p,'protein') + cell(f,'fat') + cell(v,'vitamins') + '</tr>';
   });
-  document.getElementById('report-text').innerHTML = highlightedReport;
+  tfoot.innerHTML =
+    '<tr><td>סה"כ</td>' +
+    ['carbs','protein','fat','vitamins'].map(function(k) {
+      return '<td><strong>' + totTbl[k] + 'g</strong></td>';
+    }).join('') + '</tr>';
+  tbl.style.display = '';
 
   // Nutrition card
   const targets = { carbs: 150, protein: 50, fat: 50, vitamins: 20 };
