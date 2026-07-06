@@ -1817,10 +1817,38 @@ function playBeep() {
 }
 
 async function generateMealImage(items) {
-  const names = items.map(function(i) { return i.name; }).join(', ');
-  const prompt =
-    'A colorful fun cartoon illustration for children of a balanced meal tray with: ' + names +
-    '. Bright cheerful colors, flat design, white background, cute kawaii style, no text, food icons arranged neatly on a tray.';
+  // Build nutritional story
+  var totCarbs = 0, totProtein = 0, totFat = 0, totVit = 0;
+  items.forEach(function(i) {
+    totCarbs   += Number(i.carbs)    || 0;
+    totProtein += Number(i.protein)  || 0;
+    totFat     += Number(i.fat)      || 0;
+    totVit     += Number(i.vitamins) || 0;
+  });
+  var dominant = [
+    { key: 'carbs',    val: totCarbs,   theme: 'glowing energy bolts and lightning, a running child full of power' },
+    { key: 'protein',  val: totProtein, theme: 'strong muscles, a flexing superhero kid, growth and strength' },
+    { key: 'fat',      val: totFat,     theme: 'a glowing brain, smart ideas, light bulbs, brainpower' },
+    { key: 'vitamins', val: totVit,     theme: 'colorful vitamins sparkling, a healthy glowing body, rainbow of health' }
+  ].sort(function(a,b){ return b.val - a.val; })[0];
+
+  var styles = [
+    'cute kawaii flat design illustration, pastel colors',
+    'Pixar 3D render style, rounded cute shapes, vibrant colors',
+    'watercolor children book illustration, soft brushstrokes',
+    'pixel art style, bright 16-bit colors, retro game aesthetic',
+    'bold pop-art illustration, bright outlines, comic style',
+    'hand-drawn doodle art, colorful sketch style, fun and playful'
+  ];
+  var style = styles[Math.floor(Math.random() * styles.length)];
+
+  var names = items.map(function(i) { return i.name; }).join(', ');
+  var prompt =
+    'A ' + style + ' for children. ' +
+    'A cheerful meal scene featuring: ' + names + '. ' +
+    'The scene conveys ' + dominant.theme + '. ' +
+    'White background, no text, no letters, food arranged beautifully, bright happy mood.';
+
   try {
     const resp = await fetch('https://api.together.xyz/v1/images/generations', {
       method: 'POST',
