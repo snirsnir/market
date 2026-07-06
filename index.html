@@ -695,9 +695,11 @@
     }
 
     .analyzing-robot {
-      font-size: 96px;
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
       animation: pulse 1.6s ease-in-out infinite;
-      filter: drop-shadow(0 0 24px rgba(41,171,226,0.6));
+      filter: drop-shadow(0 0 24px rgba(41,171,226,0.6)) brightness(0) invert(1);
     }
 
     .analyzing-title {
@@ -1237,8 +1239,8 @@
        SCREEN 4: ANALYZING
   ══════════════════════════════════════ -->
   <div id="screen-analyzing" class="screen">
-    <div class="analyzing-robot">🤖</div>
-    <h2 class="analyzing-title">הרובוט מנתח את הסל שלך...</h2>
+    <img class="analyzing-robot" src="technoda.png" alt="טכנודע" />
+    <h2 class="analyzing-title">המערכת מנתחת את הסל שלך...</h2>
     <p class="analyzing-subtitle">הבינה המלאכותית עובדת...</p>
     <div class="dots-row">
       <div class="dot"></div>
