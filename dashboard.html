@@ -434,22 +434,15 @@
       border-radius: 0 0 0.45em 0.45em;
       overflow: hidden; background: #f0f0f0;
     }
+    @keyframes liquidBob {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-0.18em); }
+    }
     .dash-cup-liquid {
       position: absolute; bottom: 0; left: 0; right: 0;
-      transition: height 0.8s ease, background 0.8s ease;
       border-radius: 0 0 0.4em 0.4em;
-    }
-    @keyframes dashBubbleRise {
-      0%   { transform: translateY(0);      opacity: 0.8; }
-      70%  { opacity: 0.45; }
-      100% { transform: translateY(-3.2em); opacity: 0;   }
-    }
-    .dash-bubble {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.45);
-      animation: dashBubbleRise ease-in infinite;
-      pointer-events: none;
+      transition: height 0.8s ease, background 0.8s ease;
+      animation: liquidBob 2.2s ease-in-out infinite;
     }
     .dash-cup-score { font-size: 0.72em; font-weight: 800; color: #662D91; }
   </style>
@@ -862,19 +855,6 @@
     liquid.style.background = cupColor;
 
     cup.appendChild(liquid);
-
-    for (var b = 0; b < 5; b++) {
-      var bubble = document.createElement('span');
-      bubble.className = 'dash-bubble';
-      var sz = (0.09 + Math.random() * 0.11).toFixed(2) + 'em';
-      bubble.style.cssText =
-        'width:' + sz + ';height:' + sz + ';' +
-        'left:' + Math.round(10 + Math.random() * 68) + '%;' +
-        'bottom:' + Math.round(4 + Math.random() * 22) + '%;' +
-        'animation-duration:' + (0.85 + Math.random() * 1.2).toFixed(2) + 's;' +
-        'animation-delay:-' + (Math.random() * 2.5).toFixed(2) + 's;';
-      cup.appendChild(bubble);
-    }
 
     var scoreNum = document.createElement('div');
     scoreNum.className = 'dash-cup-score';
