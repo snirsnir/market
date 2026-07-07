@@ -434,7 +434,42 @@
       border-radius: 0 0 0.45em 0.45em;
       overflow: hidden; background: #f0f0f0;
     }
-    .dash-cup-liquid { position: absolute; bottom: 0; left: 0; right: 0; transition: height 0.8s ease, background 0.8s ease; }
+    .dash-cup-liquid {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      transition: height 0.8s ease, background 0.8s ease;
+      border-radius: 0 0 0.4em 0.4em;
+    }
+    .dash-cup-liquid::before {
+      content: '';
+      position: absolute;
+      top: -0.4em; left: -50%;
+      width: 200%; height: 0.8em;
+      background: inherit;
+      border-radius: 40%;
+      animation: dashLiquidWave 1.6s linear infinite;
+      opacity: 0.8;
+    }
+    .dash-cup-liquid::after {
+      content: '';
+      position: absolute;
+      width: 0.22em; height: 0.22em;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.55);
+      bottom: 15%; left: 22%;
+      animation: dashBubbleRise 1.4s ease-in infinite;
+      box-shadow: 0.45em 0.3em 0 -0.04em rgba(255,255,255,0.4),
+                  0.15em 0.7em 0  0.02em rgba(255,255,255,0.35),
+                 -0.2em  0.5em 0 -0.06em rgba(255,255,255,0.45);
+    }
+    @keyframes dashLiquidWave {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes dashBubbleRise {
+      0%   { transform: translateY(0)     scale(1);   opacity: 0.7; }
+      80%  { transform: translateY(-160%) scale(0.5); opacity: 0.4; }
+      100% { transform: translateY(-200%) scale(0.2); opacity: 0;   }
+    }
     .dash-cup-score { font-size: 0.72em; font-weight: 800; color: #662D91; }
   </style>
 </head>
