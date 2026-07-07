@@ -1936,7 +1936,7 @@ async function generateMealImage(recipeName) {
     const resp = await fetch(OPENAI_WORKER + '/v1/images/generations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-image-1', prompt: prompt, size: '1024x1024', n: 1 })
+      body: JSON.stringify({ model: 'gpt-image-1', prompt: prompt, size: '1024x1024', quality: 'low', n: 1 })
     });
     const text = await resp.text();
     console.log('Image gen response status:', resp.status);
