@@ -410,6 +410,8 @@
     .slider-carbs   { color: var(--orange); }
     .slider-protein { color: var(--blue);   }
     .slider-fat     { color: var(--green);  }
+    .slider-score   { color: var(--purple); }
+    .score-display  { font-size: 1.4rem; font-weight: 900; color: var(--purple); min-width: 2.5ch; text-align: center; }
     .td-actions { display: flex; gap: .35rem; }
 
     /* Modal */
@@ -803,6 +805,7 @@
                   <th>חלב׳ (g)</th>
                   <th>שומ׳ (g)</th>
                   <th>ויטמינים</th>
+                  <th>ניקוד</th>
                   <th>פעולות</th>
                 </tr>
               </thead>
@@ -955,6 +958,21 @@
       <div class="form-group">
         <label class="form-label" for="f-vitamins">ויטמינים (0–10)</label>
         <input class="form-control" id="f-vitamins" type="number" min="0" max="10" step="1" placeholder="0" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">⭐ ניקוד תזונתי (0–20)</label>
+        <div class="slider-group">
+          <div class="slider-header">
+            <span class="slider-label-text">ניקוד המוצר</span>
+            <div class="slider-num-box">
+              <input type="number" class="slider-number" id="f-score" min="0" max="20" step="1" value="0" />
+              <span class="slider-unit">pts</span>
+            </div>
+          </div>
+          <input type="range" class="nutrient-slider slider-score" id="f-score-range" min="0" max="20" step="1" value="0" />
+        </div>
+        <p class="form-hint">ירק/פרי = 15–20 | חלב/דגנים = 8–14 | חטיף/ממתק = 0–7</p>
       </div>
 
       <div class="form-group">

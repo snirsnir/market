@@ -309,6 +309,7 @@ function renderProductsTable(products) {
     html += '<td>' + escHtml(String(proteinVal)) + '</td>';
     html += '<td>' + escHtml(String(fatVal)) + '</td>';
     html += '<td>' + renderVitaminsBadge(p.vitamins) + '</td>';
+    html += '<td><strong style="color:#662D91">' + (p.score !== undefined ? p.score : '–') + '</strong></td>';
     html += '<td><div class="td-actions">';
     html += '<button class="btn btn-primary btn-icon" onclick="openEditModal(\'' + escAttr(barcode) + '\')" title="ערוך">✏️</button>';
     html += '<button class="btn btn-danger btn-icon" onclick="deleteProduct(\'' + escAttr(barcode) + '\')" title="מחק">🗑️</button>';
@@ -358,6 +359,7 @@ function openAddModal() {
   document.getElementById('f-carbs-range')._refresh(0);
   document.getElementById('f-protein-range')._refresh(0);
   document.getElementById('f-fat-range')._refresh(0);
+  document.getElementById('f-score-range')._refresh(0);
   productModal.classList.add('open');
   document.getElementById('f-name').focus();
 }
@@ -377,6 +379,7 @@ function openEditModal(barcode) {
   document.getElementById('f-protein-range')._refresh(proteinVal);
   document.getElementById('f-fat-range')._refresh(fatVal);
   document.getElementById('f-vitamins').value = (p.vitamins !== undefined && p.vitamins !== null) ? p.vitamins : '';
+  document.getElementById('f-score-range')._refresh((p.score !== undefined && p.score !== null) ? p.score : 0);
   document.getElementById('f-ai-fact').value  = p.aiFact  || '';
   setEmojiPicker(p.emoji || '🛒');
   var isBase64 = p.image && p.image.startsWith('data:');
@@ -412,6 +415,7 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
   var protein = parseFloat(document.getElementById('f-protein').value) || 0;
   var fat     = parseFloat(document.getElementById('f-fat').value)     || 0;
   var vitamins = parseInt(document.getElementById('f-vitamins').value, 10) || 0;
+  var score   = parseInt(document.getElementById('f-score').value, 10) || 0;
   var aiFact  = document.getElementById('f-ai-fact').value.trim();
 
   if (!name)    { showToast('שם מוצר הוא שדה חובה', 'error'); return; }
@@ -423,6 +427,7 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
   }
 
   var vitaminsClamp = Math.max(0, Math.min(10, vitamins));
+  var scoreClamp    = Math.max(0, Math.min(20, score));
   var productData = {
     name: name,
     emoji: emoji,
@@ -431,6 +436,7 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
     protein: protein,
     fat: fat,
     vitamins: vitaminsClamp,
+    score: scoreClamp,
     aiFact: aiFact
   };
 
@@ -769,6 +775,7 @@ function bindNutrientSlider(numberId, rangeId, color) {
 bindNutrientSlider('f-carbs',   'f-carbs-range',   '#F7941D');
 bindNutrientSlider('f-protein', 'f-protein-range', '#29ABE2');
 bindNutrientSlider('f-fat',     'f-fat-range',     '#8DC63F');
+bindNutrientSlider('f-score',   'f-score-range',   '#662D91');
 
 /* =====================================================
    KEYBOARD

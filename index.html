@@ -459,6 +459,67 @@
       line-height: 1;
     }
 
+    /* Cart analysis: donut + cup */
+    .cart-analysis-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 12px;
+      padding: 4px 0;
+    }
+    .cart-donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
+    .cart-donut {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      background: conic-gradient(#e0e0e0 0deg 360deg);
+      position: relative;
+      transition: background 0.8s ease;
+    }
+    .cart-donut-hole {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 66px; height: 66px;
+      background: var(--card-bg);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cart-donut-center-text { font-size: 10px; font-weight: 700; color: #555; text-align: center; line-height: 1.3; }
+    .cart-donut-legend { display: flex; flex-wrap: wrap; gap: 4px 8px; justify-content: center; }
+    .cart-donut-legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: #444; }
+    .cart-donut-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    .score-cup-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; }
+    .score-cup-label { font-size: 16px; font-weight: 900; color: #333; }
+    .score-cup {
+      width: 60px; height: 90px;
+      border: 3px solid #ccc;
+      border-top: none;
+      border-radius: 0 0 20px 20px;
+      position: relative;
+      overflow: hidden;
+      background: #f5f5f5;
+    }
+    .score-cup-liquid {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 0%;
+      transition: height 1s cubic-bezier(0.34, 1.2, 0.64, 1), background 0.8s;
+      border-radius: 0 0 17px 17px;
+    }
+    .score-cup-liquid::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: -50%;
+      width: 200%; height: 16px;
+      background: inherit;
+      border-radius: 40%;
+      animation: liquidWave 2s linear infinite;
+      opacity: 0.7;
+    }
+    .score-cup-bottom { font-size: 11px; font-weight: 700; color: #777; }
+    .score-cup-status { font-size: 13px; font-weight: 800; min-height: 18px; text-align: center; }
+
     /* Items */
     .items-list {
       display: flex;
@@ -1124,6 +1185,13 @@
     .challenge-box { background: linear-gradient(135deg, #fff8e6, #fff3d4); border-radius: 12px; padding: 14px 16px; border-right: 4px solid #F7941D; font-size: 15px; font-weight: 600; color: #5a3000; line-height: 1.6; }
     .fact-box { background: linear-gradient(135deg, #f0f7ff, #e8f3ff); border-radius: 12px; padding: 14px 16px; border-right: 4px solid #0066cc; font-size: 14px; color: #003366; line-height: 1.7; }
 
+    .score-report-card { text-align: center; }
+    .score-report-num { font-size: 48px; font-weight: 900; line-height: 1; }
+    .score-report-sub { font-size: 14px; color: #888; margin-bottom: 12px; }
+    .score-report-bar-track { background: #eee; border-radius: 20px; height: 14px; overflow: hidden; margin: 8px 0; }
+    .score-report-bar-fill { height: 100%; border-radius: 20px; transition: width 1.2s cubic-bezier(0.34,1.2,0.64,1); }
+    .score-report-label { font-size: 16px; font-weight: 800; margin-top: 8px; }
+
     .meal-image-wrap { border-radius: 16px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.12); position: relative; background: #f0f4ff; min-height: 180px; display: flex; align-items: center; justify-content: center; }
     .meal-image-wrap img { width: 100%; border-radius: 16px; display: block; }
     .meal-image-loading { color: #aaa; font-size: 14px; text-align: center; padding: 40px 20px; }
@@ -1190,42 +1258,31 @@
         <p class="progress-text" id="progress-text">סרוק את המוצר הראשון שלך!</p>
       </div>
 
-      <!-- Chemical Flasks -->
+      <!-- Macro Donut + Score Cup -->
       <div class="nutrients-card">
         <div class="nutrients-title">⚗️ ניתוח הסל</div>
-        <div class="flasks-row">
-          <div class="flask-wrap">
-            <div class="flask">
-              <div class="flask-liquid" id="fl-carbs" style="background:#F7941D;"></div>
+        <div class="cart-analysis-row">
+
+          <!-- Donut chart -->
+          <div class="cart-donut-wrap">
+            <div class="cart-donut" id="cart-donut">
+              <div class="cart-donut-hole">
+                <div class="cart-donut-center-text" id="cart-donut-text">—</div>
+              </div>
             </div>
-            <div class="flask-name">פחמימות</div>
-            <div class="flask-val" id="fv-carbs">—</div>
-            <div class="flask-icon">🌾</div>
+            <div class="cart-donut-legend" id="cart-donut-legend"></div>
           </div>
-          <div class="flask-wrap">
-            <div class="flask">
-              <div class="flask-liquid" id="fl-protein" style="background:#29ABE2;"></div>
+
+          <!-- Score cup -->
+          <div class="score-cup-wrap">
+            <div class="score-cup-label" id="score-cup-label">0 / 100</div>
+            <div class="score-cup" id="score-cup">
+              <div class="score-cup-liquid" id="score-cup-liquid"></div>
             </div>
-            <div class="flask-name">חלבונים</div>
-            <div class="flask-val" id="fv-protein">—</div>
-            <div class="flask-icon">💪</div>
+            <div class="score-cup-bottom">ניקוד הסל</div>
+            <div class="score-cup-status" id="score-cup-status"></div>
           </div>
-          <div class="flask-wrap">
-            <div class="flask">
-              <div class="flask-liquid" id="fl-fat" style="background:#8DC63F;"></div>
-            </div>
-            <div class="flask-name">שומנים</div>
-            <div class="flask-val" id="fv-fat">—</div>
-            <div class="flask-icon">🥑</div>
-          </div>
-          <div class="flask-wrap">
-            <div class="flask">
-              <div class="flask-liquid" id="fl-vitamins" style="background:#662D91;"></div>
-            </div>
-            <div class="flask-name">ויטמינים</div>
-            <div class="flask-val" id="fv-vitamins">—</div>
-            <div class="flask-icon">🍊</div>
-          </div>
+
         </div>
       </div>
 
@@ -1332,6 +1389,17 @@
         <div class="report-card-title">🍳 מה אפשר להכין מהסל?</div>
         <div class="recipe-name" id="recipe-name"></div>
         <div class="recipe-steps" id="recipe-steps"></div>
+      </div>
+
+      <!-- Score card -->
+      <div class="report-card score-report-card" id="score-report-card" style="display:none;">
+        <div class="report-card-title">⭐ ניקוד הסל</div>
+        <div class="score-report-num" id="score-report-num">0</div>
+        <div class="score-report-sub">מתוך 100</div>
+        <div class="score-report-bar-track">
+          <div class="score-report-bar-fill" id="score-report-bar" style="width:0%"></div>
+        </div>
+        <div class="score-report-label" id="score-report-label"></div>
       </div>
 
       <!-- Daily fact card -->
@@ -1771,25 +1839,63 @@ function updateCart() {
     ptext.textContent = '🎉 הגעת למקסימום!';
   }
 
-  // Chemical flasks
-  const totals = { carbs: 0, protein: 0, fat: 0, vitamins: 0 };
+  // Macro donut chart + score cup
+  const totals = { carbs: 0, protein: 0, fat: 0, score: 0 };
   cartItems.forEach(function(item) {
-    totals.carbs    += Number(item.carbs    || 0);
-    totals.protein  += Number(item.protein  || 0);
-    totals.fat      += Number(item.fat      || 0);
-    totals.vitamins += Number(item.vitamins || 0);
+    totals.carbs   += Number(item.carbs   || 0);
+    totals.protein  = (totals.protein || 0) + Number(item.protein || 0);
+    totals.fat     += Number(item.fat     || 0);
+    totals.score   += Number(item.score   || 0);
   });
-  function setFlask(liqId, valId, value, max, unit) {
-    var pct = Math.min(93, Math.round(value / max * 100));
-    var liq = document.getElementById(liqId);
-    var val = document.getElementById(valId);
-    if (liq) liq.style.height = pct + '%';
-    if (val) val.textContent = value > 0 ? Math.round(value) + unit : '—';
+  // recalc protein separately (simple sum)
+  var totalProtein = 0;
+  cartItems.forEach(function(i){ totalProtein += Number(i.protein||0); });
+
+  var kcalCarbs   = totals.carbs   * 4;
+  var kcalProtein = totalProtein   * 4;
+  var kcalFat     = totals.fat     * 9;
+  var totalKcal   = kcalCarbs + kcalProtein + kcalFat || 1;
+  var pCarbs   = Math.round(kcalCarbs   / totalKcal * 100);
+  var pProtein = Math.round(kcalProtein / totalKcal * 100);
+  var pFat     = Math.round(kcalFat     / totalKcal * 100);
+
+  var donut = document.getElementById('cart-donut');
+  var donutText = document.getElementById('cart-donut-text');
+  var donutLegend = document.getElementById('cart-donut-legend');
+  if (donut && totalKcal > 1) {
+    var a1 = Math.round(pCarbs   / 100 * 360);
+    var a2 = a1 + Math.round(pProtein / 100 * 360);
+    donut.style.background = 'conic-gradient(#F7941D 0deg ' + a1 + 'deg, #29ABE2 ' + a1 + 'deg ' + a2 + 'deg, #8DC63F ' + a2 + 'deg 360deg)';
+    donutText.innerHTML = Math.round(totalKcal) + '<br>קל\'';
+    donutLegend.innerHTML =
+      '<span class="cart-donut-legend-item"><span class="cart-donut-legend-dot" style="background:#F7941D"></span>🌾 ' + pCarbs + '%</span>' +
+      '<span class="cart-donut-legend-item"><span class="cart-donut-legend-dot" style="background:#29ABE2"></span>💪 ' + pProtein + '%</span>' +
+      '<span class="cart-donut-legend-item"><span class="cart-donut-legend-dot" style="background:#8DC63F"></span>🥑 ' + pFat + '%</span>';
+  } else if (donut) {
+    donut.style.background = 'conic-gradient(#e0e0e0 0deg 360deg)';
+    donutText.textContent = '—';
+    donutLegend.innerHTML = '';
   }
-  setFlask('fl-carbs',    'fv-carbs',    totals.carbs,    150, 'g');
-  setFlask('fl-protein',  'fv-protein',  totals.protein,   50, 'g');
-  setFlask('fl-fat',      'fv-fat',      totals.fat,       50, 'g');
-  setFlask('fl-vitamins', 'fv-vitamins', totals.vitamins,  20, 'g');
+
+  // Score cup
+  var scoreTotal = totals.score;
+  var scorePct   = Math.min(scoreTotal / 100, 1);
+  var cupLiquid  = document.getElementById('score-cup-liquid');
+  var cupLabel   = document.getElementById('score-cup-label');
+  var cupStatus  = document.getElementById('score-cup-status');
+  if (cupLiquid) {
+    cupLiquid.style.height = Math.round(scorePct * 90) + '%';
+    var cupColor = scorePct < 0.4 ? '#BE1E2D' : scorePct < 0.7 ? '#F7941D' : '#8DC63F';
+    cupLiquid.style.background = cupColor;
+    document.getElementById('score-cup').style.borderColor = cupColor;
+  }
+  if (cupLabel) cupLabel.textContent = scoreTotal + ' / 100';
+  if (cupStatus) {
+    if (scoreTotal >= 100) { cupStatus.textContent = '🏆 סל איכותי!'; cupStatus.style.color = '#8DC63F'; }
+    else if (scoreTotal >= 70) { cupStatus.textContent = '👍 סל טוב'; cupStatus.style.color = '#F7941D'; }
+    else if (scoreTotal >= 40) { cupStatus.textContent = '💪 ממשיכים!'; cupStatus.style.color = '#F7941D'; }
+    else { cupStatus.textContent = scoreTotal > 0 ? '🌱 בדרך...' : ''; cupStatus.style.color = '#BE1E2D'; }
+  }
 
   // Buttons
   const btnFinish = document.getElementById('btn-finish');
@@ -2099,6 +2205,7 @@ async function onScanSuccess(decodedText) {
       protein:  product.protein  || 0,
       fat:      product.fat      || 0,
       vitamins: product.vitamins || 0,
+      score:    product.score    || 0,
       aiFact:   product.aiFact   || ''
     };
 
@@ -2161,21 +2268,30 @@ async function finishShopping(forced) {
     if (Number(item.protein)  > 0) parts.push('חלבונים: ' + item.protein);
     if (Number(item.fat)      > 0) parts.push('שומנים: ' + item.fat);
     if (Number(item.vitamins) > 0) parts.push('ויטמינים: ' + item.vitamins);
+    if (Number(item.score)    > 0) parts.push('ניקוד: ' + item.score);
     const nutriInfo = parts.length ? ' (' + parts.join(', ') + ')' : '';
     const factLine  = item.aiFact ? ' | עובדה: ' + item.aiFact : '';
     return '• ' + item.emoji + ' ' + item.name + nutriInfo + factLine;
   }).join('\n');
+
+  const totalScore = cartItems.reduce((s, i) => s + (Number(i.score) || 0), 0);
+  const scoreLevel = totalScore >= 100 ? 'סל איכותי מאוד (ניקוד ' + totalScore + '/100)' :
+                     totalScore >=  70 ? 'סל טוב (ניקוד ' + totalScore + '/100)' :
+                     totalScore >=  40 ? 'סל בינוני (ניקוד ' + totalScore + '/100)' :
+                                         'סל עם מקום לשיפור (ניקוד ' + totalScore + '/100)';
 
   const fullPrompt = `${basePrompt}
 
 הסל מכיל ${cartItems.length} מוצרים:
 ${productLines}
 
+ניקוד תזונתי כולל של הסל: ${scoreLevel}
+
 ענה אך ורק ב-JSON בפורמט הבא (ללא מרכאות חיצוניות, ללא markdown, השתמש ב-\n לירידת שורה בתוך ערכי JSON):
 {
   "title": "כותרת מגניבה לילד (2-4 מילים)",
   "score": "דירוג בכוכבות (למשל ⭐⭐⭐⭐)",
-  "report": "כתוב 5-7 משפטים זורמים בגוף רבים (בחרתם, הרכבתם) בשפה קלילה ומהנה שפונה לילדים ולהוריהם. אל תשתמש בבולטים — רק טקסט רציף. השתמש במילה 'סל' ולא 'ארוחה'. הזכר לפחות 3-4 מוצרים ספציפיים מהסל עם מה שהם נותנים לגוף — סמן את שמות המוצרים ב-**כוכביים** כמו **תפוח**. הוסף דגשים תזונתיים חשובים. סיים במשפט עידוד חם.",
+  "report": "כתוב 5-7 משפטים זורמים בגוף רבים (בחרתם, הרכבתם) בשפה קלילה ומהנה שפונה לילדים ולהוריהם. אל תשתמש בבולטים — רק טקסט רציף. השתמש במילה 'סל' ולא 'ארוחה'. הזכר לפחות 3-4 מוצרים ספציפיים מהסל עם מה שהם נותנים לגוף — סמן את שמות המוצרים ב-**כוכביים** כמו **תפוח**. התייחס לניקוד התזונתי של הסל (${scoreLevel}) ושלב את זה בטבעיות בטקסט. הוסף דגשים תזונתיים חשובים. סיים במשפט עידוד חם.",
   "recipe_name": "שם מתכון אחד פשוט שאפשר להכין עם חלק מהמוצרים בסל",
   "recipe_steps": "שלבי הכנה ממוספרים (3-4 שלבים קצרים, הפרד שלבים ב-\n)",
   "daily_fact": "עובדה מדעית מפתיעה אחת על אחד המוצרים בסל, לילדים"
@@ -2432,6 +2548,23 @@ function showReport() {
     }
   }
 
+
+  // Score card
+  const totalScore = cartItems.reduce((s, i) => s + (Number(i.score) || 0), 0);
+  const scoreCard = document.getElementById('score-report-card');
+  if (scoreCard) {
+    document.getElementById('score-report-num').textContent = totalScore;
+    const pct = Math.min(totalScore, 100);
+    const bar = document.getElementById('score-report-bar');
+    bar.style.width = pct + '%';
+    bar.style.background = pct >= 70 ? '#8DC63F' : pct >= 40 ? '#F7941D' : '#BE1E2D';
+    const lbl = document.getElementById('score-report-label');
+    if (totalScore >= 100) { lbl.textContent = '🏆 סל איכותי מאוד!'; lbl.style.color = '#8DC63F'; }
+    else if (totalScore >= 70) { lbl.textContent = '👍 סל טוב מאוד'; lbl.style.color = '#F7941D'; }
+    else if (totalScore >= 40) { lbl.textContent = '💪 סל בינוני — יש מקום לשיפור'; lbl.style.color = '#F7941D'; }
+    else { lbl.textContent = '🌱 הוסיפו יותר ירקות ופירות'; lbl.style.color = '#BE1E2D'; }
+    scoreCard.style.display = '';
+  }
 
   // Daily fact card
   if (reportData && reportData.daily_fact) {
