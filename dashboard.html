@@ -410,13 +410,32 @@
       #header { padding: 0 12px; }
     }
 
-    /* Nutrient gauge */
-    .nutrient-gauge-wrap { display: flex; flex-direction: column; gap: 0.3em; flex-shrink: 0; }
-    .ng-row { display: flex; align-items: center; gap: 0.4em; }
-    .ng-icon { font-size: 0.88em; width: 1.3em; flex-shrink: 0; text-align: center; }
-    .ng-track { flex: 1; height: 0.5em; background: #e8e8e8; border-radius: 8px; overflow: hidden; }
-    .ng-fill { height: 100%; border-radius: 8px; min-width: 3px; transition: width 0.5s ease; }
-    .ng-value { font-size: 0.7em; font-weight: 700; color: #666; width: 1.8em; text-align: left; flex-shrink: 0; }
+    /* Donut + Score Cup row */
+    .macro-row { display: flex; align-items: center; gap: 0.7em; flex-shrink: 0; }
+
+    .dash-donut-wrap { position: relative; width: 4.2em; height: 4.2em; flex-shrink: 0; }
+    .dash-donut { width: 100%; height: 100%; border-radius: 50%; }
+    .dash-donut-hole {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 54%; height: 54%;
+      border-radius: 50%; background: #fff;
+    }
+
+    .macro-legend { display: flex; flex-direction: column; gap: 0.18em; font-size: 0.7em; flex: 1; }
+    .macro-legend-item { display: flex; align-items: center; gap: 0.3em; font-weight: 700; color: #444; }
+    .macro-dot { width: 0.65em; height: 0.65em; border-radius: 50%; flex-shrink: 0; }
+
+    .dash-cup-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.15em; flex-shrink: 0; }
+    .dash-cup-label { font-size: 0.6em; color: #888; font-weight: 700; }
+    .dash-cup {
+      position: relative; width: 2em; height: 3em;
+      border: 0.16em solid #ccc; border-top: none;
+      border-radius: 0 0 0.45em 0.45em;
+      overflow: hidden; background: #f0f0f0;
+    }
+    .dash-cup-liquid { position: absolute; bottom: 0; left: 0; right: 0; transition: height 0.8s ease, background 0.8s ease; }
+    .dash-cup-score { font-size: 0.72em; font-weight: 800; color: #662D91; }
   </style>
 </head>
 <body>
@@ -708,7 +727,7 @@
     body.className = 'card-body';
 
     body.appendChild(buildProgressSection(items, status));
-    body.appendChild(buildNutrientGauge(items));
+    body.appendChild(buildNutrientDonut(items));
     body.appendChild(buildItemsList(items));
 
     if (status === 'done' && aiTitle) {
@@ -748,12 +767,13 @@
     return wrap;
   }
 
-  function buildNutrientGauge(items) {
-    var carbs = 0, protein = 0, fat = 0;
+  function buildNutrientDonut(items) {
+    var carbs = 0, protein = 0, fat = 0, score = 0;
     items.forEach(function(item) {
       carbs   += Number(item.carbs   || 0);
       protein += Number(item.protein || 0);
       fat     += Number(item.fat     || 0);
+      score   += Number(item.score   || 0);
     });
 
     var kcalCarbs   = carbs   * 4;
@@ -761,46 +781,85 @@
     var kcalFat     = fat     * 9;
     var totalKcal   = kcalCarbs + kcalProtein + kcalFat || 1;
 
-    var nutrients = [
-      { label: 'פחמימות', emoji: '🌾', kcal: kcalCarbs,   color: '#F7941D' },
-      { label: 'חלבונים', emoji: '💪', kcal: kcalProtein, color: '#29ABE2' },
-      { label: 'שומנים',  emoji: '🥑', kcal: kcalFat,     color: '#8DC63F' },
-    ];
+    var pCarbs   = Math.round(kcalCarbs   / totalKcal * 100);
+    var pProtein = Math.round(kcalProtein / totalKcal * 100);
+    var pFat     = Math.round(kcalFat     / totalKcal * 100);
 
-    var wrap = document.createElement('div');
-    wrap.className = 'nutrient-gauge-wrap';
+    var a1 = Math.round(pCarbs   / 100 * 360);
+    var a2 = a1 + Math.round(pProtein / 100 * 360);
 
-    nutrients.forEach(function(n) {
-      var pct = Math.round(n.kcal / totalKcal * 100);
+    var scorePct = Math.min(score / 100, 1);
+    var cupColor = scorePct < 0.4 ? '#BE1E2D' : scorePct < 0.7 ? '#F7941D' : '#8DC63F';
 
-      var row = document.createElement('div');
-      row.className = 'ng-row';
+    var row = document.createElement('div');
+    row.className = 'macro-row';
 
-      var icon = document.createElement('span');
-      icon.className = 'ng-icon';
-      icon.textContent = n.emoji;
+    // Donut
+    var donutWrap = document.createElement('div');
+    donutWrap.className = 'dash-donut-wrap';
 
-      var track = document.createElement('div');
-      track.className = 'ng-track';
+    var donut = document.createElement('div');
+    donut.className = 'dash-donut';
+    donut.style.background = 'conic-gradient(#F7941D 0deg ' + a1 + 'deg, #29ABE2 ' + a1 + 'deg ' + a2 + 'deg, #8DC63F ' + a2 + 'deg 360deg)';
 
-      var fill = document.createElement('div');
-      fill.className = 'ng-fill';
-      fill.style.width = pct + '%';
-      fill.style.background = n.color;
-      fill.title = n.label + ': ' + pct + '%';
+    var hole = document.createElement('div');
+    hole.className = 'dash-donut-hole';
 
-      var valEl = document.createElement('span');
-      valEl.className = 'ng-value';
-      valEl.textContent = pct + '%';
+    donutWrap.appendChild(donut);
+    donutWrap.appendChild(hole);
 
-      track.appendChild(fill);
-      row.appendChild(icon);
-      row.appendChild(track);
-      row.appendChild(valEl);
-      wrap.appendChild(row);
+    // Legend
+    var legend = document.createElement('div');
+    legend.className = 'macro-legend';
+
+    [
+      { label: 'פחמ׳', pct: pCarbs,   color: '#F7941D' },
+      { label: 'חלב׳', pct: pProtein, color: '#29ABE2' },
+      { label: 'שומ׳', pct: pFat,     color: '#8DC63F' },
+    ].forEach(function(n) {
+      var li = document.createElement('div');
+      li.className = 'macro-legend-item';
+      var dot = document.createElement('span');
+      dot.className = 'macro-dot';
+      dot.style.background = n.color;
+      var txt = document.createElement('span');
+      txt.textContent = n.label + ' ' + n.pct + '%';
+      li.appendChild(dot);
+      li.appendChild(txt);
+      legend.appendChild(li);
     });
 
-    return wrap;
+    // Score Cup
+    var cupWrap = document.createElement('div');
+    cupWrap.className = 'dash-cup-wrap';
+
+    var cupLabel = document.createElement('div');
+    cupLabel.className = 'dash-cup-label';
+    cupLabel.textContent = 'ניקוד';
+
+    var cup = document.createElement('div');
+    cup.className = 'dash-cup';
+
+    var liquid = document.createElement('div');
+    liquid.className = 'dash-cup-liquid';
+    liquid.style.height = Math.round(scorePct * 90) + '%';
+    liquid.style.background = cupColor;
+
+    cup.appendChild(liquid);
+
+    var scoreNum = document.createElement('div');
+    scoreNum.className = 'dash-cup-score';
+    scoreNum.textContent = score;
+
+    cupWrap.appendChild(cupLabel);
+    cupWrap.appendChild(cup);
+    cupWrap.appendChild(scoreNum);
+
+    row.appendChild(donutWrap);
+    row.appendChild(legend);
+    row.appendChild(cupWrap);
+
+    return row;
   }
 
   function buildItemsList(items) {
