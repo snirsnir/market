@@ -267,6 +267,37 @@
       filter: brightness(0) invert(1);
       flex-shrink: 0;
     }
+    .session-timer {
+      background: rgba(255,255,255,0.25);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .session-timer.timer-warning {
+      background: #BE1E2D;
+      animation: timerPulse 1s ease-in-out infinite;
+    }
+    @keyframes timerPulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.7; }
+    }
+    .return-banner {
+      background: linear-gradient(135deg, #BE1E2D, #ff4444);
+      color: #fff;
+      font-size: 17px;
+      font-weight: 800;
+      text-align: center;
+      padding: 16px 20px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 16px rgba(190,30,45,0.35);
+    }
     .cart-header-text { flex: 1; }
     .cart-header-greeting {
       color: rgba(255,255,255,0.65);
@@ -1142,6 +1173,7 @@
         <div class="cart-header-greeting">שלום 👋</div>
         <div class="cart-header-name" id="cart-header-name">—</div>
       </div>
+      <div id="session-timer" class="session-timer">20:00</div>
       <img src="technoda.png" alt="טכנודה" class="cart-header-logo" />
     </div>
 
@@ -1150,7 +1182,7 @@
       <div class="progress-card">
         <div class="progress-header">
           <span class="progress-title">🛒 מוצרים בסל</span>
-          <span class="progress-count"><span id="progress-num">0</span>/10</span>
+          <span class="progress-count"><span id="progress-num">0</span>/7</span>
         </div>
         <div class="progress-track">
           <div class="progress-fill" id="progress-fill" style="width:0%"></div>
@@ -1258,6 +1290,9 @@
     </div>
 
     <div class="report-body">
+      <!-- Return products banner -->
+      <div class="return-banner">⚠️ נא להחזיר את המוצרים למדפים לפני היציאה!</div>
+
       <!-- AI analysis card -->
       <div class="report-card">
         <div class="report-card-title">📊 ניתוח תזונתי</div>
@@ -1401,10 +1436,51 @@ const EMAILJS_PUBLIC_KEY = "Y0yqKFQQ4ONQ4j396";
 let db;
 let sessionId   = null;
 let sessionName = "";
-let cartItems   = [];  // [{ barcode, name, emoji, carbs, protein, fat, vitamins, aiFact }]
+let cartItems   = [];
 let selectedAvatar = null;
 let selectedTheme  = null;
 let qrScanner   = null;
+
+/* ── Session Timer ──────────────────────────────────────────────── */
+const SESSION_DURATION_MS = 20 * 60 * 1000;
+const WARNING_AT_MS       =  5 * 60 * 1000;
+let sessionTimerInterval  = null;
+let sessionStartTime      = 0;
+let warningShown          = false;
+
+function startSessionTimer(startTime) {
+  sessionStartTime = startTime || Date.now();
+  warningShown = false;
+  if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+  sessionTimerInterval = setInterval(tickSessionTimer, 1000);
+  tickSessionTimer();
+}
+
+function stopSessionTimer() {
+  if (sessionTimerInterval) { clearInterval(sessionTimerInterval); sessionTimerInterval = null; }
+  const el = document.getElementById('session-timer');
+  if (el) el.style.display = 'none';
+}
+
+function tickSessionTimer() {
+  const remaining = Math.max(0, SESSION_DURATION_MS - (Date.now() - sessionStartTime));
+  const el = document.getElementById('session-timer');
+  if (el) {
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    el.textContent = '⏱ ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    el.className = 'session-timer' + (remaining <= WARNING_AT_MS ? ' timer-warning' : '');
+    el.style.display = '';
+  }
+  if (!warningShown && remaining <= WARNING_AT_MS && remaining > 0) {
+    warningShown = true;
+    showToast('⏰ נשארו עוד 5 דקות! מהרו לסיים את הסל', 'error');
+  }
+  if (remaining <= 0) {
+    stopSessionTimer();
+    finishShopping(true);
+  }
+}
 
 /* ── iOS Audio Unlock ─────────────────────────────────────────────
    iOS blocks audio unless triggered inside a user gesture.
@@ -1544,6 +1620,7 @@ window.onload = function () {
         }
         if (session.status === 'shopping') {
           cartItems = session.items ? Object.values(session.items) : [];
+          startSessionTimer(session.createdAt || Date.now());
           showScreen('screen-cart');
           updateCart();
         } else if (session.status === 'done' && session.aiReport) {
@@ -1617,15 +1694,17 @@ async function startSession() {
   localStorage.setItem('sessionId',   sessionId);
   localStorage.setItem('sessionName', sessionName);
 
+  const now = Date.now();
   await db.ref('sessions/' + sessionId).set({
     name,
     avatar:    selectedAvatar.id,
     theme:     selectedTheme.id,
     status:    'shopping',
-    createdAt: Date.now(),
+    createdAt: now,
     items:     []
   });
 
+  startSessionTimer(now);
   showScreen('screen-cart');
   // Apply theme to all screens
   if (selectedTheme) {
@@ -1644,6 +1723,7 @@ async function startSession() {
 }
 
 function clearSession() {
+  stopSessionTimer();
   if (sessionId) db.ref('sessions/' + sessionId).update({ reportDoneAt: Date.now() });
   localStorage.removeItem('sessionId');
   localStorage.removeItem('sessionName');
@@ -1656,7 +1736,7 @@ function clearSession() {
 /* ══════════════════════════════════════════════════════════
    CART
 ══════════════════════════════════════════════════════════ */
-const MAX_ITEMS = 10;
+const MAX_ITEMS = 7;
 const MIN_ITEMS = 7;
 
 function updateCart() {
@@ -2055,8 +2135,10 @@ async function onScanSuccess(decodedText) {
 /* ══════════════════════════════════════════════════════════
    FINISH / AI ANALYSIS
 ══════════════════════════════════════════════════════════ */
-async function finishShopping() {
-  if (cartItems.length < MIN_ITEMS) return;
+async function finishShopping(forced) {
+  if (!forced && cartItems.length < MIN_ITEMS) return;
+  if (cartItems.length === 0) return;
+  stopSessionTimer();
 
   showScreen('screen-analyzing');
 
