@@ -564,7 +564,13 @@ function generatePrintPage(selectedProducts) {
   html += '.sticker-qr { padding:5px; display:flex; justify-content:center; align-items:center; }';
   html += '.sticker-qr canvas { display:block; }';
   html += '.sticker-footer { width:100%; text-align:center; font-size:6pt; color:#999; border-top:1px solid #eee; padding:3px 0; letter-spacing:.3px; }';
-  html += '@media print { .page-controls{display:none!important;} body{margin:0;} .sticker-grid{padding:5mm;} }';
+  html += '@media print {';
+  html += '  .page-controls { display:none!important; }';
+  html += '  body { margin:0; }';
+  html += '  .sticker-grid { padding:5mm; }';
+  html += '  .sticker { break-inside:avoid; page-break-inside:avoid; }';
+  html += '  .sticker-top { break-inside:avoid; page-break-inside:avoid; }';
+  html += '}';
   html += '</style>';
   html += '</head>';
   html += '<body>';

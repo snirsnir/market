@@ -2245,6 +2245,21 @@ async function onScanSuccess(decodedText) {
 async function finishShopping(forced) {
   if (!forced && cartItems.length < MIN_ITEMS) return;
   if (cartItems.length === 0) return;
+
+  if (!forced) {
+    const missing = [];
+    const hasProtein = cartItems.some(i => Number(i.protein) > 0);
+    const hasCarbs   = cartItems.some(i => Number(i.carbs)   > 0);
+    const hasWater   = cartItems.some(i => (i.name || '').includes('מים'));
+    if (!hasProtein) missing.push('לא לקחתם חלבון! 💪');
+    if (!hasCarbs)   missing.push('לא לקחתם פחמימות! 🌾');
+    if (!hasWater)   missing.push('לא לקחתם מים! 💧');
+    if (missing.length > 0) {
+      showToast('⚠️ ' + missing.join(' | '), 'error');
+      return;
+    }
+  }
+
   stopSessionTimer();
 
   showScreen('screen-analyzing');
